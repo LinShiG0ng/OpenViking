@@ -24,6 +24,9 @@ from openviking.storage.collection_schemas import init_context_collection
 from openviking.storage.queuefs.queue_manager import QueueManager, init_queue_manager
 from openviking.storage.transaction import TransactionManager, init_transaction_manager
 from openviking.storage.viking_fs import VikingFS, init_viking_fs
+from openviking.sync.cloud_db import CloudDatabase
+from openviking.sync.sync_hooks import set_sync_manager
+from openviking.sync.sync_manager import CloudSyncManager
 from openviking.utils.resource_processor import ResourceProcessor
 from openviking.utils.skill_processor import SkillProcessor
 from openviking_cli.exceptions import NotInitializedError
@@ -75,6 +78,10 @@ class OpenVikingService:
         self._skill_processor: Optional[SkillProcessor] = None
         self._session_compressor: Optional[SessionCompressor] = None
         self._transaction_manager: Optional[TransactionManager] = None
+
+        # Cloud sync
+        self._cloud_db: Optional[CloudDatabase] = None
+        self._cloud_sync_manager: Optional[CloudSyncManager] = None
 
         # Sub-services
         self._fs_service = FSService()
@@ -259,11 +266,58 @@ class OpenVikingService:
             config=self._config,
         )
 
+        # Initialize cloud sync
+        enable_cloud_sync = os.environ.get(
+            "OPENVIKING_CLOUD_SYNC", ""
+        ).lower() in ("true", "1", "yes")
+        if enable_cloud_sync:
+            await self._init_cloud_sync()
+
         self._initialized = True
         logger.info("OpenVikingService initialized")
 
+    async def _init_cloud_sync(self) -> None:
+        """Initialize cloud sync infrastructure."""
+        cloud_db_path = os.environ.get(
+            "OPENVIKING_CLOUD_DB_PATH", "openviking_cloud.db"
+        )
+        try:
+            self._cloud_db = CloudDatabase(db_path=cloud_db_path)
+            self._cloud_db.initialize()
+
+            self._cloud_sync_manager = CloudSyncManager(
+                cloud_db=self._cloud_db,
+                batch_size=50,
+                flush_interval=2.0,
+            )
+            await self._cloud_sync_manager.start()
+
+            # Set global sync manager for hooks
+            set_sync_manager(self._cloud_sync_manager)
+            logger.info(f"Cloud sync initialized (db: {cloud_db_path})")
+        except Exception as e:
+            logger.error(f"Failed to initialize cloud sync: {e}")
+            self._cloud_db = None
+            self._cloud_sync_manager = None
+
+    @property
+    def cloud_sync_manager(self) -> Optional[CloudSyncManager]:
+        """Get CloudSyncManager instance."""
+        return self._cloud_sync_manager
+
     async def close(self) -> None:
         """Close OpenViking and release resources."""
+        # Stop cloud sync first to drain the queue
+        if self._cloud_sync_manager:
+            await self._cloud_sync_manager.stop()
+            set_sync_manager(None)
+            self._cloud_sync_manager = None
+            logger.info("Cloud sync manager stopped")
+
+        if self._cloud_db:
+            self._cloud_db.close()
+            self._cloud_db = None
+
         if self._transaction_manager:
             self._transaction_manager.stop()
             self._transaction_manager = None

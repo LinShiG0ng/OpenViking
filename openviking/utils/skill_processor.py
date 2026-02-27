@@ -15,6 +15,7 @@ from openviking.core.skill_loader import SkillLoader
 from openviking.storage import VikingDBManager
 from openviking.storage.queuefs.embedding_msg_converter import EmbeddingMsgConverter
 from openviking.storage.viking_fs import VikingFS
+from openviking.sync.sync_hooks import on_skill_processed
 from openviking_cli.session.user_id import UserIdentifier
 from openviking_cli.utils import get_logger
 from openviking_cli.utils.config import get_openviking_config
@@ -98,6 +99,18 @@ class SkillProcessor:
             context=context,
             skill_dir_uri=skill_dir_uri,
         )
+
+        # Cloud sync: skill data
+        await on_skill_processed({
+            "name": skill_dict["name"],
+            "description": skill_dict.get("description", ""),
+            "content": skill_dict.get("content", ""),
+            "uri": skill_dir_uri,
+            "tags": skill_dict.get("tags", []),
+            "allowed_tools": skill_dict.get("allowed_tools", []),
+            "source_path": skill_dict.get("source_path", ""),
+            "overview": overview,
+        })
 
         return {
             "status": "success",

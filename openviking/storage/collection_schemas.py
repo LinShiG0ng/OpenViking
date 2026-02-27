@@ -205,6 +205,12 @@ class TextEmbeddingHandler(DequeueHandlerBase):
                     logger.debug(
                         f"Successfully wrote embedding to database: {record_id} abstract {inserted_data['abstract']} vector {inserted_data['vector'][:5]}"
                     )
+                    # Cloud sync: context indexed
+                    try:
+                        from openviking.sync.sync_hooks import on_context_indexed
+                        await on_context_indexed(inserted_data)
+                    except Exception:
+                        pass
             except CollectionNotFoundError as db_err:
                 # During shutdown, queue workers may finish one dequeued item.
                 if getattr(self._vikingdb, "is_closing", False):

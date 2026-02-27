@@ -2,13 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 """FastAPI application for OpenViking HTTP Server."""
 
+import os
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Callable, Optional
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from openviking.server.api_keys import APIKeyManager
 from openviking.server.config import ServerConfig, load_server_config
@@ -27,6 +30,8 @@ from openviking.server.routers import (
     sessions_router,
     system_router,
 )
+from openviking.server.routers.chat import router as chat_router
+from openviking.server.routers.cloud_sync import router as cloud_sync_router
 from openviking.service.core import OpenVikingService
 from openviking_cli.exceptions import OpenVikingError
 from openviking_cli.utils import get_logger
@@ -151,5 +156,12 @@ def create_app(
     app.include_router(pack_router)
     app.include_router(debug_router)
     app.include_router(observer_router)
+    app.include_router(chat_router)
+    app.include_router(cloud_sync_router)
+
+    # Mount static files for chat and admin pages
+    static_dir = Path(__file__).parent / "static"
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
     return app

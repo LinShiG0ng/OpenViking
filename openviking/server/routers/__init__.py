@@ -3,6 +3,8 @@
 """OpenViking HTTP Server routers."""
 
 from openviking.server.routers.admin import router as admin_router
+from openviking.server.routers.chat import router as chat_router
+from openviking.server.routers.cloud_sync import router as cloud_sync_router
 from openviking.server.routers.content import router as content_router
 from openviking.server.routers.debug import router as debug_router
 from openviking.server.routers.filesystem import router as filesystem_router
@@ -16,6 +18,8 @@ from openviking.server.routers.system import router as system_router
 
 __all__ = [
     "admin_router",
+    "chat_router",
+    "cloud_sync_router",
     "system_router",
     "resources_router",
     "filesystem_router",

@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenViking Chat</title>
+    <style>
+        :root {
+            --bg-primary: #0f1117;
+            --bg-secondary: #1a1b26;
+            --bg-tertiary: #24253a;
+            --bg-hover: #2a2b3d;
+            --text-primary: #c0caf5;
+            --text-secondary: #a9b1d6;
+            --text-muted: #565f89;
+            --accent: #7aa2f7;
+            --accent-hover: #89b4fa;
+            --success: #9ece6a;
+            --warning: #e0af68;
+            --error: #f7768e;
+            --border: #292e42;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-header h1 {
+            font-size: 18px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-header h1::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            padding: 10px;
+            margin-top: 12px;
+            background: var(--accent);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .new-chat-btn:hover { background: var(--accent-hover); }
+
+        .sidebar-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-muted);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .sidebar-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .session-item, .skill-item {
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            transition: background 0.2s;
+            font-size: 13px;
+        }
+
+        .session-item:hover, .skill-item:hover { background: var(--bg-hover); }
+        .session-item.active { background: var(--bg-tertiary); }
+
+        .session-item .session-id {
+            color: var(--text-secondary);
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .skill-item .skill-name {
+            color: var(--success);
+            font-weight: 500;
+        }
+
+        .skill-item .skill-desc {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-top: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Main chat area */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .chat-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header .session-info {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .admin-link {
+            padding: 6px 14px;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .admin-link:hover {
+            background: var(--bg-hover);
+            color: var(--accent);
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            max-width: 800px;
+        }
+
+        .message.user { flex-direction: row-reverse; margin-left: auto; }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar { background: var(--accent); color: var(--bg-primary); }
+        .message.assistant .message-avatar { background: var(--success); color: var(--bg-primary); }
+
+        .message-content {
+            padding: 12px 16px;
+            border-radius: 12px;
+            max-width: 600px;
+            line-height: 1.6;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .message.user .message-content {
+            background: var(--accent);
+            color: var(--bg-primary);
+            border-top-right-radius: 4px;
+        }
+
+        .message.assistant .message-content {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-top-left-radius: 4px;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 24px;
+            max-width: 100px;
+        }
+
+        .typing-indicator.visible { display: block; }
+
+        .typing-dots {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-6px); }
+        }
+
+        /* Input area */
+        .input-area {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .input-row textarea {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            resize: none;
+            min-height: 44px;
+            max-height: 150px;
+            line-height: 1.4;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-row textarea:focus { border-color: var(--accent); }
+
+        .send-btn {
+            padding: 0 20px;
+            background: var(--accent);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .send-btn:hover { background: var(--accent-hover); }
+        .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .input-options {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            align-items: center;
+        }
+
+        .input-options label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        .input-options input[type="checkbox"] {
+            accent-color: var(--accent);
+        }
+
+        .input-options input[type="text"] {
+            padding: 4px 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 12px;
+            width: 200px;
+        }
+
+        /* Skill modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.visible { display: flex; }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            width: 560px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 16px 48px var(--shadow);
+        }
+
+        .modal h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: var(--accent);
+        }
+
+        .modal label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            margin-top: 12px;
+        }
+
+        .modal input, .modal textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .modal input:focus, .modal textarea:focus { border-color: var(--accent); }
+        .modal textarea { min-height: 120px; resize: vertical; }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+
+        .modal-actions button {
+            padding: 8px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-cancel {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .btn-cancel:hover { background: var(--bg-hover); }
+
+        .btn-submit {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        .btn-submit:hover { background: var(--accent-hover); }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 200;
+            animation: toast-in 0.3s ease;
+        }
+
+        .toast.success { background: var(--success); color: var(--bg-primary); }
+        .toast.error { background: var(--error); color: var(--bg-primary); }
+
+        @keyframes toast-in {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            gap: 12px;
+        }
+
+        .empty-state .icon { font-size: 48px; opacity: 0.3; }
+        .empty-state p { font-size: 14px; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>OpenViking Chat</h1>
+            <button class="new-chat-btn" onclick="newChat()">New Conversation</button>
+        </div>
+        <div class="sidebar-tabs">
+            <div class="sidebar-tab active" data-tab="sessions" onclick="switchTab('sessions')">Sessions</div>
+            <div class="sidebar-tab" data-tab="skills" onclick="switchTab('skills')">Skills</div>
+        </div>
+        <div class="sidebar-content" id="sidebar-content">
+            <!-- Dynamic content -->
+        </div>
+        <div style="padding: 12px; border-top: 1px solid var(--border);">
+            <button class="new-chat-btn" style="background: var(--success);" onclick="showSkillModal()">
+                Create Skill
+            </button>
+        </div>
+    </div>
+
+    <!-- Main chat area -->
+    <div class="main">
+        <div class="chat-header">
+            <div class="session-info" id="session-info">No active session</div>
+            <a href="/static/admin.html" class="admin-link">Admin Dashboard</a>
+        </div>
+
+        <div class="messages" id="messages">
+            <div class="empty-state">
+                <div class="icon">Viking</div>
+                <p>Start a new conversation or select a session</p>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typing">
+            <div class="typing-dots">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-row">
+                <textarea id="message-input" placeholder="Type your message..."
+                    rows="1" onkeydown="handleKeyDown(event)"></textarea>
+                <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+            </div>
+            <div class="input-options">
+                <label>
+                    <input type="checkbox" id="use-context" checked> Use Context (RAG)
+                </label>
+                <label>
+                    Model: <input type="text" id="model-input" placeholder="default" value="">
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skill Creation Modal -->
+    <div class="modal-overlay" id="skill-modal">
+        <div class="modal">
+            <h2>Create New Skill</h2>
+            <label>Skill Name *</label>
+            <input type="text" id="skill-name" placeholder="e.g., code_review">
+            <label>Description *</label>
+            <input type="text" id="skill-description" placeholder="Brief description of what this skill does">
+            <label>Tags (comma separated)</label>
+            <input type="text" id="skill-tags" placeholder="e.g., code, review, quality">
+            <label>Content (Skill Instructions) *</label>
+            <textarea id="skill-content" placeholder="Detailed instructions for the skill..."></textarea>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="hideSkillModal()">Cancel</button>
+                <button class="btn-submit" onclick="createSkill()">Create Skill</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let currentSessionId = null;
+        let currentTab = 'sessions';
+
+        // ==================== Chat functions ====================
+
+        async function newChat() {
+            currentSessionId = null;
+            document.getElementById('messages').innerHTML = '';
+            document.getElementById('session-info').textContent = 'New conversation';
+            document.getElementById('message-input').focus();
+
+            // Create session via API
+            try {
+                const res = await fetch(`${API_BASE}/api/v1/sessions`, { method: 'POST' });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    currentSessionId = data.result.session_id;
+                    document.getElementById('session-info').textContent =
+                        `Session: ${currentSessionId.substring(0, 8)}...`;
+                    loadSessions();
+                }
+            } catch (e) {
+                console.error('Failed to create session:', e);
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+            input.value = '';
+
+            // Show user message
+            appendMessage('user', text);
+
+            // Show typing indicator
+            document.getElementById('typing').classList.add('visible');
+            scrollToBottom();
+
+            try {
+                const useContext = document.getElementById('use-context').checked;
+                const model = document.getElementById('model-input').value.trim() || undefined;
+
+                const res = await fetch(`${API_BASE}/api/v1/chat/completions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: text,
+                        session_id: currentSessionId,
+                        use_context: useContext,
+                        model: model,
+                    }),
+                });
+
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    if (!currentSessionId) {
+                        currentSessionId = data.result.session_id;
+                    }
+                    document.getElementById('session-info').textContent =
+                        `Session: ${currentSessionId.substring(0, 8)}... | Context: ${data.result.context_used || 0} items`;
+                    appendMessage('assistant', data.result.message);
+                    loadSessions();
+                } else {
+                    appendMessage('assistant', `Error: ${data.result?.message || 'Unknown error'}`);
+                }
+            } catch (e) {
+                appendMessage('assistant', `Connection error: ${e.message}`);
+            } finally {
+                document.getElementById('typing').classList.remove('visible');
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        function appendMessage(role, content) {
+            const container = document.getElementById('messages');
+            // Remove empty state
+            const emptyState = container.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            div.innerHTML = `
+                <div class="message-avatar">${role === 'user' ? 'U' : 'AI'}</div>
+                <div class="message-content">${escapeHtml(content)}</div>
+            `;
+            container.appendChild(div);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('messages');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ==================== Sidebar functions ====================
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.sidebar-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === tab);
+            });
+            if (tab === 'sessions') loadSessions();
+            else loadSkills();
+        }
+
+        async function loadSessions() {
+            try {
+                const res = await fetch(`${API_BASE}/api/v1/chat/sessions`);
+                const data = await res.json();
+                const container = document.getElementById('sidebar-content');
+
+                if (currentTab !== 'sessions') return;
+
+                if (!data.result?.items?.length) {
+                    container.innerHTML = '<div style="padding: 20px; color: var(--text-muted); text-align: center; font-size: 13px;">No sessions yet</div>';
+                    return;
+                }
+
+                container.innerHTML = data.result.items.map(s => `
+                    <div class="session-item ${s.session_id === currentSessionId ? 'active' : ''}"
+                         onclick="loadSession('${s.session_id}')">
+                        <div class="session-id">${s.session_id.substring(0, 12)}...</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Failed to load sessions:', e);
+            }
+        }
+
+        async function loadSession(sessionId) {
+            currentSessionId = sessionId;
+            document.getElementById('session-info').textContent =
+                `Session: ${sessionId.substring(0, 8)}...`;
+            document.getElementById('messages').innerHTML = '';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/v1/chat/sessions/${sessionId}/messages`);
+                const data = await res.json();
+
+                if (data.result?.messages) {
+                    data.result.messages.forEach(msg => {
+                        appendMessage(msg.role, msg.content);
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to load session messages:', e);
+            }
+
+            loadSessions();
+        }
+
+        async function loadSkills() {
+            try {
+                const res = await fetch(`${API_BASE}/api/v1/chat/skills`);
+                const data = await res.json();
+                const container = document.getElementById('sidebar-content');
+
+                if (currentTab !== 'skills') return;
+
+                if (!data.result?.items?.length) {
+                    container.innerHTML = '<div style="padding: 20px; color: var(--text-muted); text-align: center; font-size: 13px;">No skills yet</div>';
+                    return;
+                }
+
+                container.innerHTML = data.result.items.map(s => `
+                    <div class="skill-item">
+                        <div class="skill-name">${escapeHtml(s.name)}</div>
+                        <div class="skill-desc">${escapeHtml(s.abstract || 'No description')}</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Failed to load skills:', e);
+            }
+        }
+
+        // ==================== Skill Modal ====================
+
+        function showSkillModal() {
+            document.getElementById('skill-modal').classList.add('visible');
+        }
+
+        function hideSkillModal() {
+            document.getElementById('skill-modal').classList.remove('visible');
+            ['skill-name', 'skill-description', 'skill-tags', 'skill-content'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+        }
+
+        async function createSkill() {
+            const name = document.getElementById('skill-name').value.trim();
+            const description = document.getElementById('skill-description').value.trim();
+            const content = document.getElementById('skill-content').value.trim();
+            const tags = document.getElementById('skill-tags').value.trim()
+                .split(',').map(t => t.trim()).filter(Boolean);
+
+            if (!name || !description || !content) {
+                showToast('Please fill in all required fields', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/v1/chat/skills`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description, content, tags }),
+                });
+
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    showToast(`Skill "${name}" created successfully!`, 'success');
+                    hideSkillModal();
+                    if (currentTab === 'skills') loadSkills();
+                } else {
+                    showToast(`Failed: ${data.result?.message || 'Unknown error'}`, 'error');
+                }
+            } catch (e) {
+                showToast(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // ==================== Init ====================
+
+        // Auto-resize textarea
+        document.getElementById('message-input').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+        });
+
+        // Initial load
+        loadSessions();
+    </script>
+</body>
+</html>

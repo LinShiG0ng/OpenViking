@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import uuid4
 
 from openviking.message import Message, Part
+from openviking.sync.sync_hooks import on_file_written, on_message_added, on_session_updated
 from openviking.utils.time_utils import get_current_timestamp
 from openviking_cli.session.user_id import UserIdentifier
 from openviking_cli.utils import get_logger, run_async
@@ -174,6 +175,25 @@ class Session:
         self._stats.total_tokens += len(msg.content) // 4
 
         self._append_to_jsonl(msg)
+
+        # Cloud sync: message and session
+        run_async(on_message_added(
+            session_id=self.session_id,
+            message_id=msg.id,
+            role=role,
+            content=msg.content,
+            parts=[p.to_dict() for p in parts] if parts else [],
+        ))
+        run_async(on_session_updated(
+            session_id=self.session_id,
+            user_data=self.user.to_dict() if self.user else None,
+            stats={
+                "total_turns": self._stats.total_turns,
+                "total_messages": len(self._messages),
+                "compression_count": self._compression.compression_index,
+            },
+        ))
+
         return msg
 
     def update_tool_part(
@@ -414,6 +434,10 @@ class Session:
 
         run_async(viking_fs.write_file(uri=f"{archive_uri}/.abstract.md", content=abstract))
         run_async(viking_fs.write_file(uri=f"{archive_uri}/.overview.md", content=overview))
+
+        # Cloud sync: archive files
+        run_async(on_file_written(f"{archive_uri}/.abstract.md", abstract, "abstract"))
+        run_async(on_file_written(f"{archive_uri}/.overview.md", overview, "overview"))
 
         logger.debug(f"Written archive: {archive_uri}")
 

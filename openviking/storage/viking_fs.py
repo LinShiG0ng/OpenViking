@@ -206,6 +206,16 @@ class VikingFS:
         result = self.agfs.rm(path, recursive)
         if uris_to_delete:
             await self._delete_from_vector_store(uris_to_delete)
+
+        # Cloud sync: file/context deleted
+        try:
+            from openviking.sync.sync_hooks import on_context_deleted, on_file_deleted
+            import asyncio
+            asyncio.ensure_future(on_file_deleted(uri))
+            asyncio.ensure_future(on_context_deleted(uri))
+        except Exception:
+            pass
+
         return result
 
     async def mv(self, old_uri: str, new_uri: str) -> Dict[str, Any]:
@@ -959,8 +969,27 @@ class VikingFS:
         await self._ensure_parent_dirs(path)
 
         if isinstance(content, str):
-            content = content.encode("utf-8")
-        self.agfs.write(path, content)
+            content_bytes = content.encode("utf-8")
+        else:
+            content_bytes = content
+        self.agfs.write(path, content_bytes)
+
+        # Cloud sync: file written
+        try:
+            from openviking.sync.sync_hooks import on_file_written
+            if isinstance(content, bytes):
+                try:
+                    text_content = content.decode("utf-8")
+                except UnicodeDecodeError:
+                    text_content = None
+            else:
+                text_content = content
+            if text_content is not None:
+                # Fire and forget - don't await to avoid blocking
+                import asyncio
+                asyncio.ensure_future(on_file_written(uri, text_content))
+        except Exception:
+            pass
 
     async def read_file(
         self,
@@ -1228,6 +1257,21 @@ class VikingFS:
             if overview:
                 overview_path = f"{path}/.overview.md"
                 self.agfs.write(overview_path, overview.encode("utf-8"))
+
+            # Cloud sync: abstract and overview files
+            try:
+                from openviking.sync.sync_hooks import on_file_written
+                import asyncio
+                if abstract:
+                    asyncio.ensure_future(
+                        on_file_written(f"{uri}/.abstract.md", abstract, "abstract")
+                    )
+                if overview:
+                    asyncio.ensure_future(
+                        on_file_written(f"{uri}/.overview.md", overview, "overview")
+                    )
+            except Exception:
+                pass
 
         except Exception as e:
             logger.error(f"[VikingFS] Failed to write {uri}: {e}")
