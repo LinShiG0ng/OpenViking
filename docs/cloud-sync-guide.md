@@ -75,7 +75,9 @@ openviking-server --help
 
 ### 3. 配置文件
 
-确保 `~/.openviking/ov.conf` 存在且配置正确。最小配置示例：
+确保 `~/.openviking/ov.conf` 存在且配置正确。
+
+#### 阿里通义千问（DashScope）配置示例（推荐）
 
 ```json
 {
@@ -92,16 +94,20 @@ openviking-server --help
   },
   "embedding": {
     "dense": {
-      "provider": "openai",
-      "model": "text-embedding-3-small",
-      "dimension": 1536,
-      "api_key": "your-api-key"
+      "provider": "dashscope",
+      "model": "text-embedding-v3",
+      "api_key": "sk-your-dashscope-api-key",
+      "api_base": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "dimension": 1024
     }
   },
   "vlm": {
-    "provider": "openai",
-    "model": "gpt-4o-mini",
-    "api_key": "your-api-key"
+    "provider": "dashscope",
+    "model": "qwen3.5-plus",
+    "api_key": "sk-your-dashscope-api-key",
+    "api_base": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "temperature": 0.0,
+    "max_retries": 2
   },
   "server": {
     "host": "0.0.0.0",
@@ -111,9 +117,78 @@ openviking-server --help
 }
 ```
 
+> **说明**：`api_base` 使用的是 DashScope 的 OpenAI 兼容模式地址。`api_key` 可在 [阿里云 DashScope 控制台](https://dashscope.console.aliyun.com/) 获取。
+
+#### 火山引擎（VolcEngine）配置示例
+
+```json
+{
+  "storage": {
+    "workspace": "/tmp/openviking-data",
+    "agfs": { "backend": "local", "timeout": 10 },
+    "vectordb": { "backend": "local", "name": "openviking" }
+  },
+  "embedding": {
+    "dense": {
+      "provider": "volcengine",
+      "model": "doubao-embedding-vision-250615",
+      "api_key": "your-volcengine-api-key",
+      "api_base": "https://ark.cn-beijing.volces.com/api/v3",
+      "dimension": 1024
+    }
+  },
+  "vlm": {
+    "provider": "volcengine",
+    "model": "doubao-seed-1-8-251228",
+    "api_key": "your-volcengine-api-key",
+    "api_base": "https://ark.cn-beijing.volces.com/api/v3"
+  },
+  "server": { "host": "0.0.0.0", "port": 1933, "cors_origins": ["*"] }
+}
+```
+
+#### OpenAI 配置示例
+
+```json
+{
+  "vlm": {
+    "provider": "openai",
+    "model": "gpt-4o-mini",
+    "api_key": "sk-your-openai-api-key"
+  }
+}
+```
+
+> **注意**：使用 OpenAI 官方模型时不需要配置 `api_base`，默认使用 `https://api.openai.com/v1`。
+
 ---
 
 ## 配置说明
+
+### VLM（大模型）配置项
+
+| 配置项 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| `provider` | string | 是 | 模型提供商，如 `dashscope`、`volcengine`、`openai`、`deepseek` 等 |
+| `model` | string | 是 | 模型名称，如 `qwen3.5-plus`、`gpt-4o-mini` |
+| `api_key` | string | 是 | API 密钥 |
+| `api_base` | string | 否 | 自定义 API 地址。使用第三方或自部署模型时必填 |
+| `temperature` | float | 否 | 生成温度，默认 `0.0` |
+| `max_retries` | int | 否 | 最大重试次数，默认 `2` |
+
+### 已支持的模型提供商
+
+| Provider | 关键词 | 默认 API 地址 | 说明 |
+|----------|--------|--------------|------|
+| `dashscope` | qwen, dashscope | — | 阿里通义千问（DashScope），需设置 `api_base` |
+| `volcengine` | doubao, ep- | `https://ark.cn-beijing.volces.com/api/v3` | 火山引擎豆包 |
+| `openai` | gpt | `https://api.openai.com/v1` | OpenAI 官方 |
+| `anthropic` | claude | — | Anthropic Claude |
+| `deepseek` | deepseek | — | DeepSeek |
+| `moonshot` | moonshot, kimi | `https://api.moonshot.ai/v1` | Moonshot / Kimi |
+| `zhipu` | glm, zai | — | 智谱 AI |
+| `minimax` | minimax | `https://api.minimax.io/v1` | MiniMax |
+| `gemini` | gemini | — | Google Gemini |
 
 ### 云端同步相关环境变量
 
@@ -124,9 +199,10 @@ openviking-server --help
 
 ### Chat 功能相关
 
-Chat 功能使用 `ov.conf` 中配置的 VLM 模型，也可以在请求时通过 `model` 参数指定其他 litellm 兼容模型。
+Chat 功能使用 `ov.conf` 中配置的 VLM 模型（`model`、`api_key`、`api_base` 会自动传递给 litellm），也可以在请求时通过 `model` 参数覆盖模型名称。
 
 支持的模型格式（通过 litellm）：
+- `qwen3.5-plus` — 阿里通义千问（需配置 `api_base`）
 - `gpt-4o-mini`、`gpt-4o` — OpenAI 模型
 - `claude-sonnet-4-20250514` — Anthropic 模型
 - `deepseek/deepseek-chat` — DeepSeek 模型
@@ -484,9 +560,10 @@ sqlite3 openviking_cloud.db "SELECT COUNT(*) FROM sync_log;"
 **现象**: "LLM call failed"
 
 **排查**:
-- 确认 `ov.conf` 中的 VLM 配置正确
-- 确认 API Key 有效
-- 确认网络可访问 LLM API
+- 确认 `ov.conf` 中的 VLM 配置正确（`model`、`api_key`、`api_base` 三项缺一不可）
+- 确认 API Key 有效（DashScope 密钥可在 https://dashscope.console.aliyun.com/ 查看）
+- 确认 `api_base` 地址正确（DashScope 兼容模式：`https://dashscope.aliyuncs.com/compatible-mode/v1`）
+- 确认网络可访问 LLM API：`curl -I https://dashscope.aliyuncs.com/compatible-mode/v1/models`
 - 检查请求中的 `model` 参数是否为 litellm 支持的格式
 
 ### 4. 静态页面 404

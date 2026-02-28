@@ -119,16 +119,17 @@ async def chat_completions(request: ChatRequest):
 
         config = get_openviking_config()
         model_name = request.model or _get_default_model(config)
+        llm_kwargs = _get_llm_kwargs(config)
 
         if request.stream:
             return StreamingResponse(
                 _stream_llm_response(
-                    model_name, messages, session, service
+                    model_name, messages, session, service, **llm_kwargs
                 ),
                 media_type="text/event-stream",
             )
 
-        response_text = await _call_llm(model_name, messages)
+        response_text = await _call_llm(model_name, messages, **llm_kwargs)
 
         # Store assistant message
         assistant_msg = session.add_message(
@@ -266,9 +267,20 @@ async def get_session_messages(session_id: str):
 
 def _get_default_model(config) -> str:
     """Get the default LLM model name from config."""
-    if config.vlm and hasattr(config.vlm, "model"):
+    if config.vlm and hasattr(config.vlm, "model") and config.vlm.model:
         return config.vlm.model
     return "gpt-4o-mini"
+
+
+def _get_llm_kwargs(config) -> Dict[str, Any]:
+    """Extract api_base and api_key from VLM config for litellm calls."""
+    kwargs: Dict[str, Any] = {}
+    if config.vlm:
+        if getattr(config.vlm, "api_base", None):
+            kwargs["api_base"] = config.vlm.api_base
+        if getattr(config.vlm, "api_key", None):
+            kwargs["api_key"] = config.vlm.api_key
+    return kwargs
 
 
 def _build_llm_messages(
@@ -299,7 +311,11 @@ def _build_llm_messages(
     return messages
 
 
-async def _call_llm(model: str, messages: List[Dict[str, str]]) -> str:
+async def _call_llm(
+    model: str,
+    messages: List[Dict[str, str]],
+    **extra_kwargs,
+) -> str:
     """Call the LLM and return the response text."""
     import litellm
 
@@ -308,11 +324,12 @@ async def _call_llm(model: str, messages: List[Dict[str, str]]) -> str:
         messages=messages,
         temperature=0.7,
         max_tokens=4096,
+        **extra_kwargs,
     )
     return response.choices[0].message.content
 
 
-async def _stream_llm_response(model, messages, session, service):
+async def _stream_llm_response(model, messages, session, service, **extra_kwargs):
     """Stream LLM response as SSE events."""
     import litellm
 
@@ -324,6 +341,7 @@ async def _stream_llm_response(model, messages, session, service):
             temperature=0.7,
             max_tokens=4096,
             stream=True,
+            **extra_kwargs,
         )
 
         async for chunk in response:
