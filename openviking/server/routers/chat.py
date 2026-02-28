@@ -119,6 +119,7 @@ async def chat_completions(request: ChatRequest):
 
         config = get_openviking_config()
         model_name = request.model or _get_default_model(config)
+        model_name = _resolve_model_for_litellm(model_name, config)
         llm_kwargs = _get_llm_kwargs(config)
 
         if request.stream:
@@ -270,6 +271,43 @@ def _get_default_model(config) -> str:
     if config.vlm and hasattr(config.vlm, "model") and config.vlm.model:
         return config.vlm.model
     return "gpt-4o-mini"
+
+
+def _resolve_model_for_litellm(model: str, config) -> str:
+    """Add litellm provider prefix if the model name doesn't already have one.
+
+    litellm requires a prefix like 'openai/', 'dashscope/' etc. to know
+    which protocol to use.  When a custom api_base is set (e.g. DashScope
+    compatible-mode), we prefix with 'openai/' so litellm uses the
+    OpenAI-compatible protocol.
+    """
+    # Already has a provider prefix — leave as-is
+    if "/" in model:
+        return model
+
+    vlm = config.vlm if config else None
+    if not vlm:
+        return model
+
+    provider = getattr(vlm, "provider", None) or ""
+    api_base = getattr(vlm, "api_base", None) or ""
+
+    # Known litellm-native providers that need their own prefix
+    _LITELLM_PREFIXES = {
+        "dashscope": "openai",
+        "volcengine": "volcengine",
+        "deepseek": "deepseek",
+        "moonshot": "openai",
+    }
+
+    if provider in _LITELLM_PREFIXES:
+        return f"{_LITELLM_PREFIXES[provider]}/{model}"
+
+    # Custom api_base but no recognised provider → treat as OpenAI-compatible
+    if api_base:
+        return f"openai/{model}"
+
+    return model
 
 
 def _get_llm_kwargs(config) -> Dict[str, Any]:
