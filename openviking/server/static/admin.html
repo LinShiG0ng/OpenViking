@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenViking Admin - Cloud Sync Dashboard</title>
+    <title>OpenViking 管理后台 - 云端同步仪表盘</title>
     <style>
         :root {
             --bg-primary: #0f1117;
@@ -322,16 +322,16 @@
 </head>
 <body>
     <div class="topnav">
-        <a href="/static/admin.html" class="logo">OpenViking Admin</a>
+        <a href="/static/admin.html" class="logo">OpenViking 管理后台</a>
         <div class="nav-links">
-            <a class="nav-link active" data-section="overview" onclick="showSection('overview')">Overview</a>
-            <a class="nav-link" data-section="contexts" onclick="showSection('contexts')">Contexts</a>
-            <a class="nav-link" data-section="skills" onclick="showSection('skills')">Skills</a>
-            <a class="nav-link" data-section="sessions" onclick="showSection('sessions')">Sessions</a>
-            <a class="nav-link" data-section="files" onclick="showSection('files')">Files</a>
-            <a class="nav-link" data-section="logs" onclick="showSection('logs')">Sync Logs</a>
+            <a class="nav-link active" data-section="overview" onclick="showSection('overview')">总览</a>
+            <a class="nav-link" data-section="contexts" onclick="showSection('contexts')">上下文</a>
+            <a class="nav-link" data-section="skills" onclick="showSection('skills')">技能</a>
+            <a class="nav-link" data-section="sessions" onclick="showSection('sessions')">会话</a>
+            <a class="nav-link" data-section="files" onclick="showSection('files')">文件</a>
+            <a class="nav-link" data-section="logs" onclick="showSection('logs')">同步日志</a>
         </div>
-        <a href="/static/chat.html" class="chat-link">Chat</a>
+        <a href="/static/chat.html" class="chat-link">对话</a>
     </div>
 
     <div class="content">
@@ -339,28 +339,28 @@
         <div id="section-overview">
             <div class="stats-grid" id="stats-grid">
                 <div class="stat-card accent">
-                    <div class="label">Total Contexts</div>
+                    <div class="label">上下文总数</div>
                     <div class="value" id="stat-contexts">-</div>
                     <div class="sub" id="stat-contexts-breakdown"></div>
                 </div>
                 <div class="stat-card success">
-                    <div class="label">Skills Synced</div>
+                    <div class="label">已同步技能</div>
                     <div class="value" id="stat-skills">-</div>
                 </div>
                 <div class="stat-card purple">
-                    <div class="label">Sessions</div>
+                    <div class="label">会话数</div>
                     <div class="value" id="stat-sessions">-</div>
                 </div>
                 <div class="stat-card warning">
-                    <div class="label">Messages</div>
+                    <div class="label">消息数</div>
                     <div class="value" id="stat-messages">-</div>
                 </div>
                 <div class="stat-card accent">
-                    <div class="label">Files Synced</div>
+                    <div class="label">已同步文件</div>
                     <div class="value" id="stat-files">-</div>
                 </div>
                 <div class="stat-card success">
-                    <div class="label">Sync Status</div>
+                    <div class="label">同步状态</div>
                     <div class="value" id="stat-sync-status">-</div>
                     <div class="sub" id="stat-last-sync"></div>
                 </div>
@@ -368,19 +368,19 @@
 
             <div class="panel">
                 <div class="panel-header">
-                    <h2>Sync Manager Status</h2>
-                    <button class="refresh-btn" onclick="loadStats()">Refresh</button>
+                    <h2>同步管理器状态</h2>
+                    <button class="refresh-btn" onclick="loadStats()">刷新</button>
                 </div>
                 <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
-                                <th>Metric</th>
-                                <th>Value</th>
+                                <th>指标</th>
+                                <th>值</th>
                             </tr>
                         </thead>
                         <tbody id="sync-manager-table">
-                            <tr><td colspan="2" class="empty-msg">Loading...</td></tr>
+                            <tr><td colspan="2" class="empty-msg">加载中...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -390,14 +390,14 @@
         <!-- Contexts Section -->
         <div id="section-contexts" class="section-hidden">
             <div style="margin-bottom: 16px; display: flex; gap: 8px;">
-                <button class="refresh-btn" onclick="loadContexts()" style="padding: 8px 16px;">All</button>
-                <button class="refresh-btn" onclick="loadContexts('resource')">Resources</button>
-                <button class="refresh-btn" onclick="loadContexts('memory')">Memories</button>
-                <button class="refresh-btn" onclick="loadContexts('skill')">Skills</button>
+                <button class="refresh-btn" onclick="loadContexts()" style="padding: 8px 16px;">全部</button>
+                <button class="refresh-btn" onclick="loadContexts('resource')">资源</button>
+                <button class="refresh-btn" onclick="loadContexts('memory')">记忆</button>
+                <button class="refresh-btn" onclick="loadContexts('skill')">技能</button>
             </div>
             <div class="panel">
                 <div class="panel-header">
-                    <h2>Synced Contexts</h2>
+                    <h2>已同步的上下文</h2>
                     <span class="badge" id="contexts-count">0</span>
                 </div>
                 <div class="table-wrapper">
@@ -405,15 +405,15 @@
                         <thead>
                             <tr>
                                 <th>URI</th>
-                                <th>Type</th>
-                                <th>Category</th>
-                                <th>Abstract</th>
-                                <th>Active</th>
-                                <th>Synced At</th>
+                                <th>类型</th>
+                                <th>分类</th>
+                                <th>摘要</th>
+                                <th>活跃数</th>
+                                <th>同步时间</th>
                             </tr>
                         </thead>
                         <tbody id="contexts-table">
-                            <tr><td colspan="6" class="empty-msg">Click "All" to load contexts</td></tr>
+                            <tr><td colspan="6" class="empty-msg">点击「全部」加载上下文数据</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -424,23 +424,23 @@
         <div id="section-skills" class="section-hidden">
             <div class="panel">
                 <div class="panel-header">
-                    <h2>Synced Skills</h2>
-                    <button class="refresh-btn" onclick="loadSkills()">Refresh</button>
+                    <h2>已同步的技能</h2>
+                    <button class="refresh-btn" onclick="loadSkills()">刷新</button>
                 </div>
                 <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Description</th>
+                                <th>名称</th>
+                                <th>描述</th>
                                 <th>URI</th>
-                                <th>Tags</th>
-                                <th>Synced At</th>
-                                <th>Actions</th>
+                                <th>标签</th>
+                                <th>同步时间</th>
+                                <th>操作</th>
                             </tr>
                         </thead>
                         <tbody id="skills-table">
-                            <tr><td colspan="6" class="empty-msg">Loading...</td></tr>
+                            <tr><td colspan="6" class="empty-msg">加载中...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -451,24 +451,24 @@
         <div id="section-sessions" class="section-hidden">
             <div class="panel">
                 <div class="panel-header">
-                    <h2>Synced Sessions</h2>
-                    <button class="refresh-btn" onclick="loadSessions()">Refresh</button>
+                    <h2>已同步的会话</h2>
+                    <button class="refresh-btn" onclick="loadSessions()">刷新</button>
                 </div>
                 <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
-                                <th>Session ID</th>
-                                <th>User</th>
-                                <th>Turns</th>
-                                <th>Messages</th>
-                                <th>Compressions</th>
-                                <th>Updated At</th>
-                                <th>Actions</th>
+                                <th>会话 ID</th>
+                                <th>用户</th>
+                                <th>轮次</th>
+                                <th>消息数</th>
+                                <th>压缩次数</th>
+                                <th>更新时间</th>
+                                <th>操作</th>
                             </tr>
                         </thead>
                         <tbody id="sessions-table">
-                            <tr><td colspan="7" class="empty-msg">Loading...</td></tr>
+                            <tr><td colspan="7" class="empty-msg">加载中...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -476,16 +476,16 @@
 
             <div class="panel" id="messages-panel" style="display: none;">
                 <div class="panel-header">
-                    <h2>Session Messages</h2>
+                    <h2>会话消息</h2>
                     <span class="badge" id="messages-session-id"></span>
                 </div>
                 <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
-                                <th>Role</th>
-                                <th>Content</th>
-                                <th>Created At</th>
+                                <th>角色</th>
+                                <th>内容</th>
+                                <th>创建时间</th>
                             </tr>
                         </thead>
                         <tbody id="messages-table"></tbody>
@@ -498,22 +498,22 @@
         <div id="section-files" class="section-hidden">
             <div class="panel">
                 <div class="panel-header">
-                    <h2>Synced Files</h2>
-                    <button class="refresh-btn" onclick="loadFiles()">Refresh</button>
+                    <h2>已同步的文件</h2>
+                    <button class="refresh-btn" onclick="loadFiles()">刷新</button>
                 </div>
                 <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
                                 <th>URI</th>
-                                <th>Type</th>
-                                <th>Size</th>
-                                <th>Synced At</th>
-                                <th>Actions</th>
+                                <th>类型</th>
+                                <th>大小</th>
+                                <th>同步时间</th>
+                                <th>操作</th>
                             </tr>
                         </thead>
                         <tbody id="files-table">
-                            <tr><td colspan="5" class="empty-msg">Loading...</td></tr>
+                            <tr><td colspan="5" class="empty-msg">加载中...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -524,23 +524,23 @@
         <div id="section-logs" class="section-hidden">
             <div class="panel">
                 <div class="panel-header">
-                    <h2>Recent Sync Logs</h2>
-                    <button class="refresh-btn" onclick="loadLogs()">Refresh</button>
+                    <h2>近期同步日志</h2>
+                    <button class="refresh-btn" onclick="loadLogs()">刷新</button>
                 </div>
                 <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
-                                <th>Time</th>
-                                <th>Operation</th>
-                                <th>Entity Type</th>
-                                <th>Entity ID</th>
-                                <th>Status</th>
-                                <th>Error</th>
+                                <th>时间</th>
+                                <th>操作</th>
+                                <th>实体类型</th>
+                                <th>实体 ID</th>
+                                <th>状态</th>
+                                <th>错误</th>
                             </tr>
                         </thead>
                         <tbody id="logs-table">
-                            <tr><td colspan="6" class="empty-msg">Loading...</td></tr>
+                            <tr><td colspan="6" class="empty-msg">加载中...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -552,7 +552,7 @@
     <div class="modal-overlay" id="detail-modal">
         <div class="detail-modal">
             <button class="close-btn" onclick="hideDetail()">&times;</button>
-            <h2 id="detail-title">Detail</h2>
+            <h2 id="detail-title">详情</h2>
             <div id="detail-body"></div>
         </div>
     </div>
@@ -605,14 +605,14 @@
             return parseFloat((b / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
 
-        // ==================== Stats ====================
+        // ==================== 统计数据 ====================
 
         async function loadStats() {
             try {
                 const res = await fetch(`${API}/api/v1/cloud/stats`);
                 const data = await res.json();
                 if (data.status !== 'ok') {
-                    document.getElementById('stat-sync-status').textContent = 'Disabled';
+                    document.getElementById('stat-sync-status').textContent = '未启用';
                     return;
                 }
                 const db = data.result.database || {};
@@ -627,14 +627,14 @@
                 // Breakdown
                 const bd = db.context_type_breakdown || {};
                 document.getElementById('stat-contexts-breakdown').textContent =
-                    Object.entries(bd).map(([k, v]) => `${k}: ${v}`).join(' | ') || 'No data';
+                    Object.entries(bd).map(([k, v]) => `${k}: ${v}`).join(' | ') || '暂无数据';
 
                 // Sync status
                 const ss = db.sync_status || {};
                 document.getElementById('stat-sync-status').textContent =
-                    mgr.running ? 'Active' : 'Stopped';
+                    mgr.running ? '运行中' : '已停止';
                 document.getElementById('stat-last-sync').textContent =
-                    db.last_sync_at ? `Last: ${formatTime(db.last_sync_at)}` : 'No syncs yet';
+                    db.last_sync_at ? `上次: ${formatTime(db.last_sync_at)}` : '暂无同步记录';
 
                 // Manager table
                 const tbody = document.getElementById('sync-manager-table');
@@ -642,11 +642,11 @@
                     <tr><td>${escapeHtml(k)}</td><td>${escapeHtml(String(v))}</td></tr>
                 `).join('');
             } catch (e) {
-                console.error('Failed to load stats:', e);
+                console.error('加载统计数据失败:', e);
             }
         }
 
-        // ==================== Contexts ====================
+        // ==================== 上下文 ====================
 
         async function loadContexts(type) {
             try {
@@ -659,7 +659,7 @@
 
                 const tbody = document.getElementById('contexts-table');
                 if (!items.length) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">No contexts found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">暂无上下文数据</td></tr>';
                     return;
                 }
                 tbody.innerHTML = items.map(c => `
@@ -673,7 +673,7 @@
                     </tr>
                 `).join('');
             } catch (e) {
-                console.error('Failed to load contexts:', e);
+                console.error('加载上下文失败:', e);
             }
         }
 
@@ -684,28 +684,28 @@
                 if (data.status !== 'ok') return;
 
                 const c = data.result;
-                document.getElementById('detail-title').textContent = 'Context Detail';
+                document.getElementById('detail-title').textContent = '上下文详情';
                 document.getElementById('detail-body').innerHTML = `
                     <div class="detail-row"><div class="label">URI</div><div class="value">${escapeHtml(c.uri)}</div></div>
-                    <div class="detail-row"><div class="label">Type</div><div class="value">${escapeHtml(c.context_type)}</div></div>
-                    <div class="detail-row"><div class="label">Category</div><div class="value">${escapeHtml(c.category || '-')}</div></div>
-                    <div class="detail-row"><div class="label">Parent URI</div><div class="value">${escapeHtml(c.parent_uri || '-')}</div></div>
-                    <div class="detail-row"><div class="label">Active Count</div><div class="value">${c.active_count || 0}</div></div>
-                    <div class="detail-row"><div class="label">Is Leaf</div><div class="value">${c.is_leaf ? 'Yes' : 'No'}</div></div>
-                    <div class="detail-row"><div class="label">Created At</div><div class="value">${formatTime(c.created_at)}</div></div>
-                    <div class="detail-row"><div class="label">Synced At</div><div class="value">${formatTime(c.synced_at)}</div></div>
-                    <h3 style="margin-top: 16px; font-size: 14px;">Abstract</h3>
-                    <div class="detail-content">${escapeHtml(c.abstract || 'No abstract')}</div>
-                    <h3 style="margin-top: 16px; font-size: 14px;">Metadata</h3>
+                    <div class="detail-row"><div class="label">类型</div><div class="value">${escapeHtml(c.context_type)}</div></div>
+                    <div class="detail-row"><div class="label">分类</div><div class="value">${escapeHtml(c.category || '-')}</div></div>
+                    <div class="detail-row"><div class="label">父级 URI</div><div class="value">${escapeHtml(c.parent_uri || '-')}</div></div>
+                    <div class="detail-row"><div class="label">活跃数</div><div class="value">${c.active_count || 0}</div></div>
+                    <div class="detail-row"><div class="label">是否叶节点</div><div class="value">${c.is_leaf ? '是' : '否'}</div></div>
+                    <div class="detail-row"><div class="label">创建时间</div><div class="value">${formatTime(c.created_at)}</div></div>
+                    <div class="detail-row"><div class="label">同步时间</div><div class="value">${formatTime(c.synced_at)}</div></div>
+                    <h3 style="margin-top: 16px; font-size: 14px;">摘要</h3>
+                    <div class="detail-content">${escapeHtml(c.abstract || '暂无摘要')}</div>
+                    <h3 style="margin-top: 16px; font-size: 14px;">元数据</h3>
                     <div class="detail-content">${escapeHtml(c.meta || '{}')}</div>
                 `;
                 document.getElementById('detail-modal').classList.add('visible');
             } catch (e) {
-                console.error('Failed to load context detail:', e);
+                console.error('加载上下文详情失败:', e);
             }
         }
 
-        // ==================== Skills ====================
+        // ==================== 技能 ====================
 
         async function loadSkills() {
             try {
@@ -715,7 +715,7 @@
 
                 const tbody = document.getElementById('skills-table');
                 if (!items.length) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">No skills found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">暂无技能数据</td></tr>';
                     return;
                 }
                 tbody.innerHTML = items.map(s => `
@@ -725,11 +725,11 @@
                         <td class="uri-cell">${escapeHtml(s.uri)}</td>
                         <td>${escapeHtml(s.tags || '[]')}</td>
                         <td>${formatTime(s.synced_at)}</td>
-                        <td><button class="refresh-btn" onclick="showSkillDetail('${escapeHtml(s.name)}')">Detail</button></td>
+                        <td><button class="refresh-btn" onclick="showSkillDetail('${escapeHtml(s.name)}')">详情</button></td>
                     </tr>
                 `).join('');
             } catch (e) {
-                console.error('Failed to load skills:', e);
+                console.error('加载技能失败:', e);
             }
         }
 
@@ -740,28 +740,28 @@
                 if (data.status !== 'ok') return;
 
                 const s = data.result;
-                document.getElementById('detail-title').textContent = `Skill: ${s.name}`;
+                document.getElementById('detail-title').textContent = `技能: ${s.name}`;
                 document.getElementById('detail-body').innerHTML = `
-                    <div class="detail-row"><div class="label">Name</div><div class="value">${escapeHtml(s.name)}</div></div>
-                    <div class="detail-row"><div class="label">Description</div><div class="value">${escapeHtml(s.description)}</div></div>
+                    <div class="detail-row"><div class="label">名称</div><div class="value">${escapeHtml(s.name)}</div></div>
+                    <div class="detail-row"><div class="label">描述</div><div class="value">${escapeHtml(s.description)}</div></div>
                     <div class="detail-row"><div class="label">URI</div><div class="value">${escapeHtml(s.uri)}</div></div>
-                    <div class="detail-row"><div class="label">Tags</div><div class="value">${escapeHtml(s.tags)}</div></div>
-                    <div class="detail-row"><div class="label">Allowed Tools</div><div class="value">${escapeHtml(s.allowed_tools)}</div></div>
-                    <div class="detail-row"><div class="label">Source</div><div class="value">${escapeHtml(s.source_path || '-')}</div></div>
-                    <div class="detail-row"><div class="label">Created At</div><div class="value">${formatTime(s.created_at)}</div></div>
-                    <div class="detail-row"><div class="label">Synced At</div><div class="value">${formatTime(s.synced_at)}</div></div>
-                    <h3 style="margin-top: 16px; font-size: 14px;">Content</h3>
-                    <div class="detail-content">${escapeHtml(s.content || 'No content')}</div>
-                    <h3 style="margin-top: 16px; font-size: 14px;">Overview</h3>
-                    <div class="detail-content">${escapeHtml(s.overview || 'No overview')}</div>
+                    <div class="detail-row"><div class="label">标签</div><div class="value">${escapeHtml(s.tags)}</div></div>
+                    <div class="detail-row"><div class="label">允许工具</div><div class="value">${escapeHtml(s.allowed_tools)}</div></div>
+                    <div class="detail-row"><div class="label">来源</div><div class="value">${escapeHtml(s.source_path || '-')}</div></div>
+                    <div class="detail-row"><div class="label">创建时间</div><div class="value">${formatTime(s.created_at)}</div></div>
+                    <div class="detail-row"><div class="label">同步时间</div><div class="value">${formatTime(s.synced_at)}</div></div>
+                    <h3 style="margin-top: 16px; font-size: 14px;">内容</h3>
+                    <div class="detail-content">${escapeHtml(s.content || '暂无内容')}</div>
+                    <h3 style="margin-top: 16px; font-size: 14px;">概述</h3>
+                    <div class="detail-content">${escapeHtml(s.overview || '暂无概述')}</div>
                 `;
                 document.getElementById('detail-modal').classList.add('visible');
             } catch (e) {
-                console.error('Failed to load skill detail:', e);
+                console.error('加载技能详情失败:', e);
             }
         }
 
-        // ==================== Sessions ====================
+        // ==================== 会话 ====================
 
         async function loadSessions() {
             try {
@@ -771,7 +771,7 @@
 
                 const tbody = document.getElementById('sessions-table');
                 if (!items.length) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">No sessions found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">暂无会话数据</td></tr>';
                     return;
                 }
                 tbody.innerHTML = items.map(s => `
@@ -782,11 +782,11 @@
                         <td>${s.total_messages || 0}</td>
                         <td>${s.compression_count || 0}</td>
                         <td>${formatTime(s.updated_at)}</td>
-                        <td><button class="refresh-btn" onclick="loadSessionMessages('${escapeHtml(s.session_id)}')">Messages</button></td>
+                        <td><button class="refresh-btn" onclick="loadSessionMessages('${escapeHtml(s.session_id)}')">消息</button></td>
                     </tr>
                 `).join('');
             } catch (e) {
-                console.error('Failed to load sessions:', e);
+                console.error('加载会话失败:', e);
             }
         }
 
@@ -801,7 +801,7 @@
 
                 const tbody = document.getElementById('messages-table');
                 if (!items.length) {
-                    tbody.innerHTML = '<tr><td colspan="3" class="empty-msg">No messages</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="3" class="empty-msg">暂无消息</td></tr>';
                     return;
                 }
                 tbody.innerHTML = items.map(m => `
@@ -814,11 +814,11 @@
 
                 document.getElementById('messages-panel').scrollIntoView({ behavior: 'smooth' });
             } catch (e) {
-                console.error('Failed to load messages:', e);
+                console.error('加载消息失败:', e);
             }
         }
 
-        // ==================== Files ====================
+        // ==================== 文件 ====================
 
         async function loadFiles() {
             try {
@@ -828,7 +828,7 @@
 
                 const tbody = document.getElementById('files-table');
                 if (!items.length) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">No files found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">暂无文件数据</td></tr>';
                     return;
                 }
                 tbody.innerHTML = items.map(f => `
@@ -837,11 +837,11 @@
                         <td>${escapeHtml(f.content_type || 'text')}</td>
                         <td>${formatBytes(f.size_bytes)}</td>
                         <td>${formatTime(f.synced_at)}</td>
-                        <td><button class="refresh-btn" onclick="showFileDetail('${escapeHtml(f.uri)}')">View</button></td>
+                        <td><button class="refresh-btn" onclick="showFileDetail('${escapeHtml(f.uri)}')">查看</button></td>
                     </tr>
                 `).join('');
             } catch (e) {
-                console.error('Failed to load files:', e);
+                console.error('加载文件失败:', e);
             }
         }
 
@@ -852,22 +852,22 @@
                 if (data.status !== 'ok') return;
 
                 const f = data.result;
-                document.getElementById('detail-title').textContent = 'File Content';
+                document.getElementById('detail-title').textContent = '文件内容';
                 document.getElementById('detail-body').innerHTML = `
                     <div class="detail-row"><div class="label">URI</div><div class="value">${escapeHtml(f.uri)}</div></div>
-                    <div class="detail-row"><div class="label">Type</div><div class="value">${escapeHtml(f.content_type)}</div></div>
-                    <div class="detail-row"><div class="label">Size</div><div class="value">${formatBytes(f.size_bytes)}</div></div>
-                    <div class="detail-row"><div class="label">Synced At</div><div class="value">${formatTime(f.synced_at)}</div></div>
-                    <h3 style="margin-top: 16px; font-size: 14px;">Content</h3>
-                    <div class="detail-content">${escapeHtml(f.content || 'Empty')}</div>
+                    <div class="detail-row"><div class="label">类型</div><div class="value">${escapeHtml(f.content_type)}</div></div>
+                    <div class="detail-row"><div class="label">大小</div><div class="value">${formatBytes(f.size_bytes)}</div></div>
+                    <div class="detail-row"><div class="label">同步时间</div><div class="value">${formatTime(f.synced_at)}</div></div>
+                    <h3 style="margin-top: 16px; font-size: 14px;">内容</h3>
+                    <div class="detail-content">${escapeHtml(f.content || '空')}</div>
                 `;
                 document.getElementById('detail-modal').classList.add('visible');
             } catch (e) {
-                console.error('Failed to load file detail:', e);
+                console.error('加载文件详情失败:', e);
             }
         }
 
-        // ==================== Logs ====================
+        // ==================== 日志 ====================
 
         async function loadLogs() {
             try {
@@ -877,7 +877,7 @@
 
                 const tbody = document.getElementById('logs-table');
                 if (!items.length) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">No logs found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">暂无日志数据</td></tr>';
                     return;
                 }
                 tbody.innerHTML = items.map(l => `
@@ -891,11 +891,11 @@
                     </tr>
                 `).join('');
             } catch (e) {
-                console.error('Failed to load logs:', e);
+                console.error('加载日志失败:', e);
             }
         }
 
-        // ==================== Modal ====================
+        // ==================== 弹窗 ====================
 
         function hideDetail() {
             document.getElementById('detail-modal').classList.remove('visible');
@@ -905,7 +905,7 @@
             if (e.target === this) hideDetail();
         });
 
-        // ==================== Init ====================
+        // ==================== 初始化 ====================
         loadStats();
     </script>
 </body>

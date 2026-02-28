@@ -1,11 +1,9 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: Apache-2.0
 """
-Sync hooks that intercept OpenViking storage operations and mirror them
-to the cloud database via CloudSyncManager.
+同步钩子：拦截 OpenViking 存储操作，将数据通过 CloudSyncManager 镜像到云端数据库。
 
-These hooks are designed to be non-intrusive: if the sync manager is not
-initialized, all hooks are no-ops.
+这些钩子设计为非侵入式：如果同步管理器未初始化，所有钩子均为空操作（no-op）。
 """
 
 import json
@@ -15,52 +13,52 @@ from openviking_cli.utils import get_logger
 
 logger = get_logger(__name__)
 
-# Global sync manager reference
+# 全局同步管理器引用
 _sync_manager = None
 
 
 def set_sync_manager(manager) -> None:
-    """Set the global sync manager."""
+    """设置全局同步管理器。"""
     global _sync_manager
     _sync_manager = manager
 
 
 def get_sync_manager():
-    """Get the global sync manager."""
+    """获取全局同步管理器。"""
     return _sync_manager
 
 
 async def on_context_indexed(context_data: Dict[str, Any]) -> None:
-    """Hook: called when a context is indexed to VikingDB."""
+    """钩子：当上下文被索引到 VikingDB 时触发。"""
     if not _sync_manager:
         return
     try:
-        # Remove vector data (too large for cloud DB)
+        # 移除向量数据（体积过大，不适合存入云端数据库）
         sync_data = {k: v for k, v in context_data.items()
                      if k not in ("vector", "sparse_vector")}
         await _sync_manager.sync_context(sync_data)
     except Exception as e:
-        logger.debug(f"Cloud sync (context indexed) failed: {e}")
+        logger.debug(f"云端同步（上下文索引）失败: {e}")
 
 
 async def on_context_deleted(uri: str) -> None:
-    """Hook: called when a context is deleted."""
+    """钩子：当上下文被删除时触发。"""
     if not _sync_manager:
         return
     try:
         await _sync_manager.sync_context_delete(uri)
     except Exception as e:
-        logger.debug(f"Cloud sync (context deleted) failed: {e}")
+        logger.debug(f"云端同步（上下文删除）失败: {e}")
 
 
 async def on_skill_processed(skill_data: Dict[str, Any]) -> None:
-    """Hook: called when a skill is processed and stored."""
+    """钩子：当技能处理完成并存储时触发。"""
     if not _sync_manager:
         return
     try:
         await _sync_manager.sync_skill(skill_data)
     except Exception as e:
-        logger.debug(f"Cloud sync (skill processed) failed: {e}")
+        logger.debug(f"云端同步（技能处理）失败: {e}")
 
 
 async def on_session_updated(
@@ -68,7 +66,7 @@ async def on_session_updated(
     user_data: Optional[Dict[str, Any]] = None,
     stats: Optional[Dict[str, Any]] = None,
 ) -> None:
-    """Hook: called when a session is created or updated."""
+    """钩子：当会话创建或更新时触发。"""
     if not _sync_manager:
         return
     try:
@@ -83,7 +81,7 @@ async def on_session_updated(
         }
         await _sync_manager.sync_session(session_data)
     except Exception as e:
-        logger.debug(f"Cloud sync (session updated) failed: {e}")
+        logger.debug(f"云端同步（会话更新）失败: {e}")
 
 
 async def on_message_added(
@@ -93,7 +91,7 @@ async def on_message_added(
     content: str,
     parts: Optional[List[Dict[str, Any]]] = None,
 ) -> None:
-    """Hook: called when a message is added to a session."""
+    """钩子：当消息添加到会话时触发。"""
     if not _sync_manager:
         return
     try:
@@ -106,25 +104,25 @@ async def on_message_added(
         }
         await _sync_manager.sync_message(message_data)
     except Exception as e:
-        logger.debug(f"Cloud sync (message added) failed: {e}")
+        logger.debug(f"云端同步（消息添加）失败: {e}")
 
 
 async def on_file_written(uri: str, content: str,
                           content_type: str = "text") -> None:
-    """Hook: called when a file is written to VikingFS."""
+    """钩子：当文件写入 VikingFS 时触发。"""
     if not _sync_manager:
         return
     try:
         await _sync_manager.sync_file(uri, content, content_type)
     except Exception as e:
-        logger.debug(f"Cloud sync (file written) failed: {e}")
+        logger.debug(f"云端同步（文件写入）失败: {e}")
 
 
 async def on_file_deleted(uri: str) -> None:
-    """Hook: called when a file is deleted from VikingFS."""
+    """钩子：当文件从 VikingFS 删除时触发。"""
     if not _sync_manager:
         return
     try:
         await _sync_manager.sync_file_delete(uri)
     except Exception as e:
-        logger.debug(f"Cloud sync (file deleted) failed: {e}")
+        logger.debug(f"云端同步（文件删除）失败: {e}")

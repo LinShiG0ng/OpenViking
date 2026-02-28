@@ -1,11 +1,10 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: Apache-2.0
 """
-Cloud Database abstraction for OpenViking cloud sync.
+OpenViking 云端数据库抽象层。
 
-Uses SQLite as the default backend for demonstration purposes.
-Can be swapped with PostgreSQL/MySQL for production use by implementing
-the same interface.
+默认使用 SQLite 作为后端（便于演示和单机部署）。
+如需用于生产环境，可替换为 PostgreSQL/MySQL，只需实现相同接口即可。
 """
 
 import asyncio
@@ -23,10 +22,9 @@ logger = get_logger(__name__)
 
 class CloudDatabase:
     """
-    Cloud database for storing synced OpenViking data.
+    云端数据库，用于存储同步的 OpenViking 数据。
 
-    Uses SQLite with WAL mode for concurrent read/write access.
-    All operations are thread-safe.
+    使用 SQLite WAL 模式支持并发读写，所有操作线程安全。
     """
 
     def __init__(self, db_path: str = "openviking_cloud.db"):
@@ -36,7 +34,7 @@ class CloudDatabase:
         self._initialized = False
 
     def _get_conn(self) -> sqlite3.Connection:
-        """Get thread-local database connection."""
+        """获取线程本地的数据库连接。"""
         if not hasattr(self._local, "conn") or self._local.conn is None:
             conn = sqlite3.connect(self._db_path, timeout=30)
             conn.row_factory = sqlite3.Row
@@ -48,7 +46,7 @@ class CloudDatabase:
 
     @contextmanager
     def _cursor(self):
-        """Get a database cursor with automatic commit/rollback."""
+        """获取数据库游标，自动提交/回滚。"""
         conn = self._get_conn()
         cursor = conn.cursor()
         try:
@@ -59,12 +57,12 @@ class CloudDatabase:
             raise
 
     def initialize(self) -> None:
-        """Create all required tables."""
+        """创建所有必需的数据表。"""
         if self._initialized:
             return
 
         with self._cursor() as cur:
-            # Synced contexts (skills, memories, resources)
+            # 同步的上下文（技能/记忆/资源）
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS synced_contexts (
                     id TEXT PRIMARY KEY,
@@ -93,7 +91,7 @@ class CloudDatabase:
                 "CREATE INDEX IF NOT EXISTS idx_ctx_synced ON synced_contexts(synced_at)"
             )
 
-            # Synced skills
+            # 同步的技能
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS synced_skills (
                     id TEXT PRIMARY KEY,
@@ -116,7 +114,7 @@ class CloudDatabase:
                 "CREATE INDEX IF NOT EXISTS idx_skill_uri ON synced_skills(uri)"
             )
 
-            # Synced sessions
+            # 同步的会话
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS synced_sessions (
                     session_id TEXT PRIMARY KEY,
@@ -132,7 +130,7 @@ class CloudDatabase:
                 )
             """)
 
-            # Synced messages
+            # 同步的消息
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS synced_messages (
                     id TEXT PRIMARY KEY,
@@ -149,7 +147,7 @@ class CloudDatabase:
                 "CREATE INDEX IF NOT EXISTS idx_msg_session ON synced_messages(session_id)"
             )
 
-            # Synced file content (compressed contexts, overviews, abstracts)
+            # 同步的文件内容（压缩上下文、概述、摘要等）
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS synced_files (
                     uri TEXT PRIMARY KEY,
@@ -163,7 +161,7 @@ class CloudDatabase:
                 "CREATE INDEX IF NOT EXISTS idx_file_type ON synced_files(content_type)"
             )
 
-            # Sync log for tracking sync operations
+            # 同步日志，用于追踪同步操作
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS sync_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -184,17 +182,17 @@ class CloudDatabase:
             )
 
         self._initialized = True
-        logger.info(f"Cloud database initialized at {self._db_path}")
+        logger.info(f"云端数据库已初始化，路径: {self._db_path}")
 
     def _now(self) -> str:
         return datetime.now(timezone.utc).isoformat()
 
     # =========================================================================
-    # Context operations
+    # 上下文操作
     # =========================================================================
 
     async def upsert_context(self, context_data: Dict[str, Any]) -> str:
-        """Upsert a context record."""
+        """插入或更新一条上下文记录。"""
         def _do():
             with self._cursor() as cur:
                 now = self._now()
@@ -239,7 +237,7 @@ class CloudDatabase:
         limit: int = 100,
         offset: int = 0,
     ) -> List[Dict[str, Any]]:
-        """Get synced contexts with optional filtering."""
+        """获取已同步的上下文列表，支持按类型筛选。"""
         def _do():
             with self._cursor() as cur:
                 query = "SELECT * FROM synced_contexts"
@@ -254,7 +252,7 @@ class CloudDatabase:
         return await asyncio.to_thread(_do)
 
     async def get_context_by_uri(self, uri: str) -> Optional[Dict[str, Any]]:
-        """Get a specific context by URI."""
+        """根据 URI 获取指定上下文。"""
         def _do():
             with self._cursor() as cur:
                 cur.execute(
@@ -265,7 +263,7 @@ class CloudDatabase:
         return await asyncio.to_thread(_do)
 
     async def delete_context(self, uri: str) -> bool:
-        """Delete a context by URI."""
+        """根据 URI 删除上下文。"""
         def _do():
             with self._cursor() as cur:
                 cur.execute(
@@ -278,11 +276,11 @@ class CloudDatabase:
         return await asyncio.to_thread(_do)
 
     # =========================================================================
-    # Skill operations
+    # 技能操作
     # =========================================================================
 
     async def upsert_skill(self, skill_data: Dict[str, Any]) -> str:
-        """Upsert a skill record."""
+        """插入或更新一条技能记录。"""
         def _do():
             with self._cursor() as cur:
                 now = self._now()
@@ -319,7 +317,7 @@ class CloudDatabase:
     async def get_skills(
         self, limit: int = 100, offset: int = 0
     ) -> List[Dict[str, Any]]:
-        """Get all synced skills."""
+        """获取所有已同步的技能。"""
         def _do():
             with self._cursor() as cur:
                 cur.execute(
@@ -330,7 +328,7 @@ class CloudDatabase:
         return await asyncio.to_thread(_do)
 
     async def get_skill_by_name(self, name: str) -> Optional[Dict[str, Any]]:
-        """Get a skill by name."""
+        """根据名称获取指定技能。"""
         def _do():
             with self._cursor() as cur:
                 cur.execute(
@@ -341,11 +339,11 @@ class CloudDatabase:
         return await asyncio.to_thread(_do)
 
     # =========================================================================
-    # Session operations
+    # 会话操作
     # =========================================================================
 
     async def upsert_session(self, session_data: Dict[str, Any]) -> str:
-        """Upsert a session record."""
+        """插入或更新一条会话记录。"""
         def _do():
             with self._cursor() as cur:
                 now = self._now()
@@ -381,7 +379,7 @@ class CloudDatabase:
     async def get_sessions(
         self, limit: int = 100, offset: int = 0
     ) -> List[Dict[str, Any]]:
-        """Get all synced sessions."""
+        """获取所有已同步的会话。"""
         def _do():
             with self._cursor() as cur:
                 cur.execute(
@@ -392,11 +390,11 @@ class CloudDatabase:
         return await asyncio.to_thread(_do)
 
     # =========================================================================
-    # Message operations
+    # 消息操作
     # =========================================================================
 
     async def upsert_message(self, message_data: Dict[str, Any]) -> str:
-        """Upsert a message record."""
+        """插入或更新一条消息记录。"""
         def _do():
             with self._cursor() as cur:
                 now = self._now()
@@ -423,7 +421,7 @@ class CloudDatabase:
     async def get_messages(
         self, session_id: str, limit: int = 200, offset: int = 0
     ) -> List[Dict[str, Any]]:
-        """Get messages for a session."""
+        """获取指定会话的消息列表。"""
         def _do():
             with self._cursor() as cur:
                 cur.execute(
@@ -435,12 +433,12 @@ class CloudDatabase:
         return await asyncio.to_thread(_do)
 
     # =========================================================================
-    # File content operations
+    # 文件内容操作
     # =========================================================================
 
     async def upsert_file(self, uri: str, content: str,
                           content_type: str = "text") -> str:
-        """Upsert a file content record."""
+        """插入或更新一条文件内容记录。"""
         def _do():
             with self._cursor() as cur:
                 now = self._now()
@@ -462,7 +460,7 @@ class CloudDatabase:
         return await asyncio.to_thread(_do)
 
     async def get_file(self, uri: str) -> Optional[Dict[str, Any]]:
-        """Get a file by URI."""
+        """根据 URI 获取文件内容。"""
         def _do():
             with self._cursor() as cur:
                 cur.execute(
@@ -478,7 +476,7 @@ class CloudDatabase:
         limit: int = 100,
         offset: int = 0,
     ) -> List[Dict[str, Any]]:
-        """Get synced files."""
+        """获取已同步的文件列表。"""
         def _do():
             with self._cursor() as cur:
                 query = "SELECT uri, content_type, size_bytes, synced_at FROM synced_files"
@@ -493,7 +491,7 @@ class CloudDatabase:
         return await asyncio.to_thread(_do)
 
     # =========================================================================
-    # Sync log & statistics
+    # 同步日志与统计
     # =========================================================================
 
     async def get_sync_logs(
@@ -502,7 +500,7 @@ class CloudDatabase:
         offset: int = 0,
         status: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
-        """Get recent sync log entries."""
+        """获取近期同步日志。"""
         def _do():
             with self._cursor() as cur:
                 query = "SELECT * FROM sync_log"
@@ -517,7 +515,7 @@ class CloudDatabase:
         return await asyncio.to_thread(_do)
 
     async def get_sync_stats(self) -> Dict[str, Any]:
-        """Get sync statistics."""
+        """获取同步统计信息。"""
         def _do():
             with self._cursor() as cur:
                 stats: Dict[str, Any] = {}
@@ -527,7 +525,7 @@ class CloudDatabase:
                     cur.execute(f"SELECT COUNT(*) as cnt FROM {table}")
                     stats[table] = cur.fetchone()["cnt"]
 
-                # Context type breakdown
+                # 上下文类型分布
                 cur.execute("""
                     SELECT context_type, COUNT(*) as cnt
                     FROM synced_contexts GROUP BY context_type
@@ -536,7 +534,7 @@ class CloudDatabase:
                     row["context_type"]: row["cnt"] for row in cur.fetchall()
                 }
 
-                # Recent sync activity
+                # 同步状态统计
                 cur.execute("""
                     SELECT status, COUNT(*) as cnt
                     FROM sync_log GROUP BY status
@@ -545,7 +543,7 @@ class CloudDatabase:
                     row["status"]: row["cnt"] for row in cur.fetchall()
                 }
 
-                # Last sync time
+                # 最后同步时间
                 cur.execute(
                     "SELECT MAX(created_at) as last_sync FROM sync_log"
                 )
@@ -556,13 +554,13 @@ class CloudDatabase:
         return await asyncio.to_thread(_do)
 
     # =========================================================================
-    # Helpers
+    # 辅助方法
     # =========================================================================
 
     def _log_sync(self, cur, operation: str, entity_type: str,
                   entity_id: str, uri: str = "",
                   status: str = "success", error: str = "") -> None:
-        """Write a sync log entry."""
+        """写入一条同步日志。"""
         cur.execute("""
             INSERT INTO sync_log (operation, entity_type, entity_id, uri,
                                   status, error_message, created_at)
@@ -572,11 +570,11 @@ class CloudDatabase:
 
     @staticmethod
     def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
-        """Convert a sqlite3.Row to a dict."""
+        """将 sqlite3.Row 转换为字典。"""
         return dict(row)
 
     def close(self) -> None:
-        """Close the database connection."""
+        """关闭数据库连接。"""
         if hasattr(self._local, "conn") and self._local.conn:
             self._local.conn.close()
             self._local.conn = None

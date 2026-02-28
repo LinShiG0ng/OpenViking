@@ -1,13 +1,13 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: Apache-2.0
 """
-Chat API endpoints for OpenViking.
+OpenViking 对话 API 端点。
 
-Provides an interactive chat endpoint that integrates with:
-- LLM (via litellm/OpenAI) for conversation
-- OpenViking sessions for message persistence
-- OpenViking context search for RAG
-- Cloud sync for mirroring all data
+提供集成以下功能的交互式对话端点：
+- LLM 大模型对话（通过 litellm/OpenAI）
+- OpenViking 会话消息持久化
+- OpenViking 上下文搜索（RAG 增强）
+- 云端同步（数据镜像）
 """
 
 import json
@@ -34,7 +34,7 @@ router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
 
 
 class ChatRequest(BaseModel):
-    """Chat request model."""
+    """对话请求模型。"""
     message: str
     session_id: Optional[str] = None
     model: Optional[str] = None
@@ -44,7 +44,7 @@ class ChatRequest(BaseModel):
 
 
 class CreateSkillRequest(BaseModel):
-    """Request to create a skill via the chat interface."""
+    """通过对话界面创建技能的请求。"""
     name: str
     description: str
     content: str
@@ -53,7 +53,7 @@ class CreateSkillRequest(BaseModel):
 
 
 class ChatMessage(BaseModel):
-    """Chat message model."""
+    """对话消息模型。"""
     role: str
     content: str
 
@@ -61,25 +61,25 @@ class ChatMessage(BaseModel):
 @router.post("/completions")
 async def chat_completions(request: ChatRequest):
     """
-    Chat with LLM, optionally augmented with OpenViking context.
+    与 LLM 对话，可选使用 OpenViking 上下文进行 RAG 增强。
 
-    This endpoint:
-    1. Creates/loads an OpenViking session
-    2. Searches for relevant context if use_context=True
-    3. Sends the augmented prompt to the LLM
-    4. Stores both user and assistant messages
-    5. Syncs all data to cloud
+    该端点的处理流程：
+    1. 创建/加载 OpenViking 会话
+    2. 如果启用了 use_context，搜索相关上下文
+    3. 将增强后的提示发送给 LLM
+    4. 存储用户和助手的消息
+    5. 将所有数据同步到云端
     """
     service = get_service()
 
-    # Get or create session
+    # 获取或创建会话
     session = service.sessions.session(request.session_id)
     await session.load()
 
-    # Store user message
+    # 存储用户消息
     user_msg = session.add_message("user", [TextPart(text=request.message)])
 
-    # Sync user message to cloud
+    # 同步用户消息到云端
     await on_message_added(
         session_id=session.session_id,
         message_id=user_msg.id,
@@ -87,7 +87,7 @@ async def chat_completions(request: ChatRequest):
         content=request.message,
     )
 
-    # Search for relevant context
+    # 搜索相关上下文
     context_parts = []
     if request.use_context:
         try:
@@ -101,19 +101,19 @@ async def chat_completions(request: ChatRequest):
                     abstract = item.get("abstract", "")
                     if abstract:
                         context_parts.append(
-                            f"[Context: {uri}]\n{abstract}"
+                            f"[上下文: {uri}]\n{abstract}"
                         )
         except Exception as e:
-            logger.debug(f"Context search failed: {e}")
+            logger.debug(f"上下文搜索失败: {e}")
 
-    # Build LLM messages
+    # 构建 LLM 消息
     messages = _build_llm_messages(
         session_messages=session.messages,
         context_parts=context_parts,
         current_message=request.message,
     )
 
-    # Call LLM
+    # 调用 LLM
     try:
         from openviking_cli.utils.config import get_openviking_config
 
@@ -132,12 +132,12 @@ async def chat_completions(request: ChatRequest):
 
         response_text = await _call_llm(model_name, messages, **llm_kwargs)
 
-        # Store assistant message
+        # 存储助手消息
         assistant_msg = session.add_message(
             "assistant", [TextPart(text=response_text)]
         )
 
-        # Sync assistant message to cloud
+        # 同步助手消息到云端
         await on_message_added(
             session_id=session.session_id,
             message_id=assistant_msg.id,
@@ -145,7 +145,7 @@ async def chat_completions(request: ChatRequest):
             content=response_text,
         )
 
-        # Sync session update
+        # 同步会话更新
         await on_session_updated(
             session_id=session.session_id,
             user_data=session.user.to_dict() if session.user else None,
@@ -166,16 +166,16 @@ async def chat_completions(request: ChatRequest):
             },
         )
     except Exception as e:
-        logger.error(f"LLM call failed: {e}")
+        logger.error(f"LLM 调用失败: {e}")
         return Response(
             status="error",
-            result={"message": f"LLM call failed: {str(e)}"},
+            result={"message": f"LLM 调用失败: {str(e)}"},
         )
 
 
 @router.post("/skills")
 async def create_skill(request: CreateSkillRequest):
-    """Create a new skill via the chat interface."""
+    """通过对话界面创建新技能。"""
     service = get_service()
 
     skill_data = {
@@ -189,7 +189,7 @@ async def create_skill(request: CreateSkillRequest):
     try:
         result = await service.resources.add_skill(data=skill_data, wait=True, timeout=30)
 
-        # Sync skill to cloud
+        # 同步技能到云端
         await on_skill_processed({
             **skill_data,
             "uri": result.get("uri", f"viking://agent/skills/{request.name}"),
@@ -197,16 +197,16 @@ async def create_skill(request: CreateSkillRequest):
 
         return Response(status="ok", result=result)
     except Exception as e:
-        logger.error(f"Skill creation failed: {e}")
+        logger.error(f"技能创建失败: {e}")
         return Response(
             status="error",
-            result={"message": f"Skill creation failed: {str(e)}"},
+            result={"message": f"技能创建失败: {str(e)}"},
         )
 
 
 @router.get("/skills")
 async def list_skills():
-    """List available skills."""
+    """列出所有可用技能。"""
     service = get_service()
     try:
         viking_fs = service.viking_fs
@@ -231,13 +231,13 @@ async def list_skills():
             })
         return Response(status="ok", result={"items": skills})
     except Exception as e:
-        logger.debug(f"List skills failed: {e}")
+        logger.debug(f"列出技能失败: {e}")
         return Response(status="ok", result={"items": []})
 
 
 @router.get("/sessions")
 async def list_chat_sessions():
-    """List all chat sessions."""
+    """列出所有对话会话。"""
     service = get_service()
     sessions = await service.sessions.sessions()
     return Response(status="ok", result={"items": sessions})
@@ -245,7 +245,7 @@ async def list_chat_sessions():
 
 @router.get("/sessions/{session_id}/messages")
 async def get_session_messages(session_id: str):
-    """Get messages for a chat session."""
+    """获取指定会话的消息列表。"""
     service = get_service()
     session = service.sessions.session(session_id)
     await session.load()
@@ -263,25 +263,24 @@ async def get_session_messages(session_id: str):
 
 
 # =========================================================================
-# Internal helpers
+# 内部辅助方法
 # =========================================================================
 
 def _get_default_model(config) -> str:
-    """Get the default LLM model name from config."""
+    """从配置中获取默认的 LLM 模型名称。"""
     if config.vlm and hasattr(config.vlm, "model") and config.vlm.model:
         return config.vlm.model
     return "gpt-4o-mini"
 
 
 def _resolve_model_for_litellm(model: str, config) -> str:
-    """Add litellm provider prefix if the model name doesn't already have one.
+    """为模型名称添加 litellm 提供商前缀（如果尚未添加）。
 
-    litellm requires a prefix like 'openai/', 'dashscope/' etc. to know
-    which protocol to use.  When a custom api_base is set (e.g. DashScope
-    compatible-mode), we prefix with 'openai/' so litellm uses the
-    OpenAI-compatible protocol.
+    litellm 需要 'openai/'、'dashscope/' 等前缀来识别使用哪种协议。
+    当设置了自定义 api_base（例如 DashScope 兼容模式）时，
+    会自动添加 'openai/' 前缀以使用 OpenAI 兼容协议。
     """
-    # Already has a provider prefix — leave as-is
+    # 已包含提供商前缀 — 保持不变
     if "/" in model:
         return model
 
@@ -292,7 +291,7 @@ def _resolve_model_for_litellm(model: str, config) -> str:
     provider = getattr(vlm, "provider", None) or ""
     api_base = getattr(vlm, "api_base", None) or ""
 
-    # Known litellm-native providers that need their own prefix
+    # 已知的 litellm 原生提供商及其前缀映射
     _LITELLM_PREFIXES = {
         "dashscope": "openai",
         "volcengine": "volcengine",
@@ -303,7 +302,7 @@ def _resolve_model_for_litellm(model: str, config) -> str:
     if provider in _LITELLM_PREFIXES:
         return f"{_LITELLM_PREFIXES[provider]}/{model}"
 
-    # Custom api_base but no recognised provider → treat as OpenAI-compatible
+    # 有自定义 api_base 但无法识别的提供商 → 视为 OpenAI 兼容
     if api_base:
         return f"openai/{model}"
 
@@ -311,7 +310,7 @@ def _resolve_model_for_litellm(model: str, config) -> str:
 
 
 def _get_llm_kwargs(config) -> Dict[str, Any]:
-    """Extract api_base and api_key from VLM config for litellm calls."""
+    """从 VLM 配置中提取 api_base 和 api_key，用于 litellm 调用。"""
     kwargs: Dict[str, Any] = {}
     if config.vlm:
         if getattr(config.vlm, "api_base", None):
@@ -326,24 +325,24 @@ def _build_llm_messages(
     context_parts: List[str],
     current_message: str,
 ) -> List[Dict[str, str]]:
-    """Build the message list for LLM call."""
+    """构建发送给 LLM 的消息列表。"""
     messages = []
 
-    # System message with context
-    system_parts = ["You are a helpful AI assistant powered by OpenViking."]
+    # 带上下文的系统消息
+    system_parts = ["你是一个由 OpenViking 驱动的智能 AI 助手。"]
     if context_parts:
         system_parts.append(
-            "\nRelevant context from the knowledge base:\n"
+            "\n来自知识库的相关上下文:\n"
             + "\n---\n".join(context_parts)
         )
     messages.append({"role": "system", "content": "\n".join(system_parts)})
 
-    # Recent history (last 20 messages, excluding the current one just added)
+    # 近期历史（最后 20 条消息，排除刚添加的当前消息）
     history = session_messages[:-1] if session_messages else []
     for msg in history[-20:]:
         messages.append({"role": msg.role, "content": msg.content})
 
-    # Current user message
+    # 当前用户消息
     messages.append({"role": "user", "content": current_message})
 
     return messages
@@ -354,7 +353,7 @@ async def _call_llm(
     messages: List[Dict[str, str]],
     **extra_kwargs,
 ) -> str:
-    """Call the LLM and return the response text."""
+    """调用 LLM 并返回响应文本。"""
     import litellm
 
     response = await litellm.acompletion(
@@ -368,7 +367,7 @@ async def _call_llm(
 
 
 async def _stream_llm_response(model, messages, session, service, **extra_kwargs):
-    """Stream LLM response as SSE events."""
+    """以 SSE 事件流方式返回 LLM 响应。"""
     import litellm
 
     full_response = ""
@@ -388,7 +387,7 @@ async def _stream_llm_response(model, messages, session, service, **extra_kwargs
                 full_response += delta.content
                 yield f"data: {json.dumps({'content': delta.content})}\n\n"
 
-        # Store complete assistant message
+        # 存储完整的助手消息
         assistant_msg = session.add_message(
             "assistant", [TextPart(text=full_response)]
         )

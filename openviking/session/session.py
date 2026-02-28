@@ -176,7 +176,7 @@ class Session:
 
         self._append_to_jsonl(msg)
 
-        # Cloud sync: message and session
+        # 云端同步：消息和会话
         run_async(on_message_added(
             session_id=self.session_id,
             message_id=msg.id,
@@ -435,7 +435,7 @@ class Session:
         run_async(viking_fs.write_file(uri=f"{archive_uri}/.abstract.md", content=abstract))
         run_async(viking_fs.write_file(uri=f"{archive_uri}/.overview.md", content=overview))
 
-        # Cloud sync: archive files
+        # 云端同步：归档文件
         run_async(on_file_written(f"{archive_uri}/.abstract.md", abstract, "abstract"))
         run_async(on_file_written(f"{archive_uri}/.overview.md", overview, "overview"))
 

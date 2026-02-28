@@ -1,17 +1,16 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: Apache-2.0
 """
-Cloud Sync Manager for OpenViking.
+OpenViking 云端同步管理器。
 
-Provides transparent, non-blocking cloud synchronization of all locally stored
-content. Uses an async background worker with a queue to ensure sync operations
-don't block the main data path.
+提供透明、非阻塞的云端同步功能，通过异步后台 Worker 和队列确保
+同步操作不阻塞主数据路径。
 
-Architecture:
-    Local write → Original storage → Sync queue → Background worker → Cloud DB
+架构:
+    本地写入 → 原始存储 → 同步队列 → 后台 Worker → 云端数据库
 
-The sync is "local-first": OpenViking always reads from local storage, and the
-cloud database is a mirror for backup/admin/analytics purposes.
+同步采用「本地优先」策略：OpenViking 始终从本地存储读取数据，
+云端数据库作为备份/管理/分析用途的镜像。
 """
 
 import asyncio
@@ -28,7 +27,7 @@ logger = get_logger(__name__)
 
 
 class SyncOperation(str, Enum):
-    """Types of sync operations."""
+    """同步操作类型。"""
     UPSERT_CONTEXT = "upsert_context"
     DELETE_CONTEXT = "delete_context"
     UPSERT_SKILL = "upsert_skill"
@@ -40,7 +39,7 @@ class SyncOperation(str, Enum):
 
 @dataclass
 class SyncTask:
-    """A single sync operation to be processed by the background worker."""
+    """单个同步任务，由后台 Worker 处理。"""
     operation: SyncOperation
     data: Dict[str, Any]
     retry_count: int = 0
@@ -52,14 +51,14 @@ class SyncTask:
 
 class CloudSyncManager:
     """
-    Manages transparent cloud synchronization of OpenViking local data.
+    管理 OpenViking 本地数据到云端的透明同步。
 
-    Features:
-    - Non-blocking async sync via background task queue
-    - Automatic retry with exponential backoff
-    - Batch processing for efficiency
-    - Health monitoring and sync statistics
-    - Graceful shutdown with queue draining
+    特性:
+    - 非阻塞异步同步，通过后台任务队列实现
+    - 自动重试，带指数退避
+    - 批量处理，提升效率
+    - 健康监控和同步统计
+    - 优雅关闭，支持队列排空
     """
 
     def __init__(
@@ -70,13 +69,13 @@ class CloudSyncManager:
         max_queue_size: int = 10000,
     ):
         """
-        Initialize the cloud sync manager.
+        初始化云端同步管理器。
 
-        Args:
-            cloud_db: CloudDatabase instance
-            batch_size: Max tasks to process per batch
-            flush_interval: Seconds between flush cycles
-            max_queue_size: Maximum pending sync tasks
+        参数:
+            cloud_db: CloudDatabase 实例
+            batch_size: 每批最大处理任务数
+            flush_interval: 刷新周期（秒）
+            max_queue_size: 最大待处理同步任务数
         """
         self._cloud_db = cloud_db
         self._batch_size = batch_size
@@ -86,7 +85,7 @@ class CloudSyncManager:
         self._worker_task: Optional[asyncio.Task] = None
         self._running = False
 
-        # Statistics
+        # 统计信息
         self._stats = {
             "total_synced": 0,
             "total_errors": 0,
@@ -99,20 +98,20 @@ class CloudSyncManager:
         }
 
     async def start(self) -> None:
-        """Start the background sync worker."""
+        """启动后台同步 Worker。"""
         if self._running:
             return
         self._running = True
         self._worker_task = asyncio.create_task(self._worker_loop())
-        logger.info("CloudSyncManager started")
+        logger.info("云端同步管理器已启动")
 
     async def stop(self) -> None:
-        """Stop the background sync worker, draining the queue first."""
+        """停止后台同步 Worker，先排空队列。"""
         if not self._running:
             return
         self._running = False
         if self._worker_task:
-            # Process remaining items
+            # 处理队列中剩余的任务
             await self._flush_queue()
             self._worker_task.cancel()
             try:
@@ -120,12 +119,12 @@ class CloudSyncManager:
             except asyncio.CancelledError:
                 pass
         logger.info(
-            f"CloudSyncManager stopped. Stats: {json.dumps(self._stats)}"
+            f"云端同步管理器已停止。统计: {json.dumps(self._stats)}"
         )
 
     @property
     def stats(self) -> Dict[str, Any]:
-        """Get sync statistics."""
+        """获取同步统计信息。"""
         return {
             **self._stats,
             "queue_size": self._queue.qsize(),
@@ -133,39 +132,39 @@ class CloudSyncManager:
         }
 
     # =========================================================================
-    # Public sync methods - called by OpenViking services
+    # 公共同步方法 - 由 OpenViking 服务调用
     # =========================================================================
 
     async def sync_context(self, context_data: Dict[str, Any]) -> None:
-        """Queue a context for cloud sync."""
+        """将上下文加入同步队列。"""
         await self._enqueue(SyncTask(
             operation=SyncOperation.UPSERT_CONTEXT,
             data=context_data,
         ))
 
     async def sync_context_delete(self, uri: str) -> None:
-        """Queue a context deletion for cloud sync."""
+        """将上下文删除操作加入同步队列。"""
         await self._enqueue(SyncTask(
             operation=SyncOperation.DELETE_CONTEXT,
             data={"uri": uri},
         ))
 
     async def sync_skill(self, skill_data: Dict[str, Any]) -> None:
-        """Queue a skill for cloud sync."""
+        """将技能加入同步队列。"""
         await self._enqueue(SyncTask(
             operation=SyncOperation.UPSERT_SKILL,
             data=skill_data,
         ))
 
     async def sync_session(self, session_data: Dict[str, Any]) -> None:
-        """Queue a session for cloud sync."""
+        """将会话加入同步队列。"""
         await self._enqueue(SyncTask(
             operation=SyncOperation.UPSERT_SESSION,
             data=session_data,
         ))
 
     async def sync_message(self, message_data: Dict[str, Any]) -> None:
-        """Queue a message for cloud sync."""
+        """将消息加入同步队列。"""
         await self._enqueue(SyncTask(
             operation=SyncOperation.UPSERT_MESSAGE,
             data=message_data,
@@ -173,7 +172,7 @@ class CloudSyncManager:
 
     async def sync_file(self, uri: str, content: str,
                         content_type: str = "text") -> None:
-        """Queue a file for cloud sync."""
+        """将文件加入同步队列。"""
         await self._enqueue(SyncTask(
             operation=SyncOperation.UPSERT_FILE,
             data={"uri": uri, "content": content,
@@ -181,23 +180,23 @@ class CloudSyncManager:
         ))
 
     async def sync_file_delete(self, uri: str) -> None:
-        """Queue a file deletion for cloud sync."""
+        """将文件删除操作加入同步队列。"""
         await self._enqueue(SyncTask(
             operation=SyncOperation.DELETE_FILE,
             data={"uri": uri},
         ))
 
     # =========================================================================
-    # Internal methods
+    # 内部方法
     # =========================================================================
 
     async def _enqueue(self, task: SyncTask) -> None:
-        """Add a task to the sync queue."""
+        """将任务添加到同步队列。"""
         try:
             self._queue.put_nowait(task)
         except asyncio.QueueFull:
             logger.warning(
-                "Cloud sync queue full, dropping oldest task to make room"
+                "云端同步队列已满，丢弃最旧的任务腾出空间"
             )
             try:
                 self._queue.get_nowait()
@@ -206,8 +205,8 @@ class CloudSyncManager:
             self._queue.put_nowait(task)
 
     async def _worker_loop(self) -> None:
-        """Background worker that processes sync tasks."""
-        logger.info("Cloud sync worker started")
+        """后台 Worker 循环，处理同步任务。"""
+        logger.info("云端同步 Worker 已启动")
         while self._running:
             try:
                 await self._flush_queue()
@@ -215,11 +214,11 @@ class CloudSyncManager:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Cloud sync worker error: {e}")
+                logger.error(f"云端同步 Worker 错误: {e}")
                 await asyncio.sleep(self._flush_interval)
 
     async def _flush_queue(self) -> None:
-        """Process a batch of sync tasks from the queue."""
+        """从队列中取出一批任务并处理。"""
         tasks: List[SyncTask] = []
         while len(tasks) < self._batch_size:
             try:
@@ -242,17 +241,17 @@ class CloudSyncManager:
                     self._stats["total_retries"] += 1
                     await self._enqueue(task)
                     logger.debug(
-                        f"Retrying sync task {task.operation} "
-                        f"(attempt {task.retry_count}): {e}"
+                        f"重试同步任务 {task.operation}"
+                        f"（第 {task.retry_count} 次）: {e}"
                     )
                 else:
                     logger.error(
-                        f"Cloud sync failed after {task.max_retries} retries: "
+                        f"云端同步在 {task.max_retries} 次重试后仍然失败: "
                         f"{task.operation} - {e}\n{traceback.format_exc()}"
                     )
 
     async def _process_task(self, task: SyncTask) -> None:
-        """Process a single sync task."""
+        """处理单个同步任务。"""
         op = task.operation
         data = task.data
 
@@ -283,7 +282,7 @@ class CloudSyncManager:
             self._stats["files_synced"] += 1
 
         elif op == SyncOperation.DELETE_FILE:
-            # Delete from synced_files table
+            # 从 synced_files 表中删除
             def _do():
                 with self._cloud_db._cursor() as cur:
                     cur.execute(

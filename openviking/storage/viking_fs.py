@@ -207,7 +207,7 @@ class VikingFS:
         if uris_to_delete:
             await self._delete_from_vector_store(uris_to_delete)
 
-        # Cloud sync: file/context deleted
+        # 云端同步：文件/上下文已删除
         try:
             from openviking.sync.sync_hooks import on_context_deleted, on_file_deleted
             import asyncio
@@ -974,7 +974,7 @@ class VikingFS:
             content_bytes = content
         self.agfs.write(path, content_bytes)
 
-        # Cloud sync: file written
+        # 云端同步：文件已写入
         try:
             from openviking.sync.sync_hooks import on_file_written
             if isinstance(content, bytes):
@@ -1258,7 +1258,7 @@ class VikingFS:
                 overview_path = f"{path}/.overview.md"
                 self.agfs.write(overview_path, overview.encode("utf-8"))
 
-            # Cloud sync: abstract and overview files
+            # 云端同步：摘要和概述文件
             try:
                 from openviking.sync.sync_hooks import on_file_written
                 import asyncio

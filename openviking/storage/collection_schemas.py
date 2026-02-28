@@ -205,7 +205,7 @@ class TextEmbeddingHandler(DequeueHandlerBase):
                     logger.debug(
                         f"Successfully wrote embedding to database: {record_id} abstract {inserted_data['abstract']} vector {inserted_data['vector'][:5]}"
                     )
-                    # Cloud sync: context indexed
+                    # 云端同步：上下文已索引
                     try:
                         from openviking.sync.sync_hooks import on_context_indexed
                         await on_context_indexed(inserted_data)

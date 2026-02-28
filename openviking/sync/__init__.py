@@ -1,9 +1,8 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: Apache-2.0
-"""Cloud sync module for OpenViking.
+"""OpenViking 云端同步模块。
 
-Provides transparent cloud synchronization of all locally stored content
-including contexts, skills, sessions, compressed content, and memories.
+提供本地存储内容（上下文、技能、会话、消息、文件）到云端数据库的透明同步功能。
 """
 
 from openviking.sync.cloud_db import CloudDatabase

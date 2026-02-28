@@ -79,7 +79,7 @@ class OpenVikingService:
         self._session_compressor: Optional[SessionCompressor] = None
         self._transaction_manager: Optional[TransactionManager] = None
 
-        # Cloud sync
+        # 云端同步
         self._cloud_db: Optional[CloudDatabase] = None
         self._cloud_sync_manager: Optional[CloudSyncManager] = None
 
@@ -266,7 +266,7 @@ class OpenVikingService:
             config=self._config,
         )
 
-        # Initialize cloud sync
+        # 初始化云端同步
         enable_cloud_sync = os.environ.get(
             "OPENVIKING_CLOUD_SYNC", ""
         ).lower() in ("true", "1", "yes")
@@ -277,7 +277,7 @@ class OpenVikingService:
         logger.info("OpenVikingService initialized")
 
     async def _init_cloud_sync(self) -> None:
-        """Initialize cloud sync infrastructure."""
+        """初始化云端同步基础设施。"""
         cloud_db_path = os.environ.get(
             "OPENVIKING_CLOUD_DB_PATH", "openviking_cloud.db"
         )
@@ -292,27 +292,27 @@ class OpenVikingService:
             )
             await self._cloud_sync_manager.start()
 
-            # Set global sync manager for hooks
+            # 设置全局同步管理器供钩子使用
             set_sync_manager(self._cloud_sync_manager)
-            logger.info(f"Cloud sync initialized (db: {cloud_db_path})")
+            logger.info(f"云端同步已初始化（数据库: {cloud_db_path}）")
         except Exception as e:
-            logger.error(f"Failed to initialize cloud sync: {e}")
+            logger.error(f"云端同步初始化失败: {e}")
             self._cloud_db = None
             self._cloud_sync_manager = None
 
     @property
     def cloud_sync_manager(self) -> Optional[CloudSyncManager]:
-        """Get CloudSyncManager instance."""
+        """获取 CloudSyncManager 实例。"""
         return self._cloud_sync_manager
 
     async def close(self) -> None:
         """Close OpenViking and release resources."""
-        # Stop cloud sync first to drain the queue
+        # 先停止云端同步，排空队列
         if self._cloud_sync_manager:
             await self._cloud_sync_manager.stop()
             set_sync_manager(None)
             self._cloud_sync_manager = None
-            logger.info("Cloud sync manager stopped")
+            logger.info("云端同步管理器已停止")
 
         if self._cloud_db:
             self._cloud_db.close()

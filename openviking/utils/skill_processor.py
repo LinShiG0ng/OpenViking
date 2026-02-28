@@ -100,7 +100,7 @@ class SkillProcessor:
             skill_dir_uri=skill_dir_uri,
         )
 
-        # Cloud sync: skill data
+        # 云端同步：技能数据
         await on_skill_processed({
             "name": skill_dict["name"],
             "description": skill_dict.get("description", ""),
