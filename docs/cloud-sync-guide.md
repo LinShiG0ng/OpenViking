@@ -94,7 +94,7 @@ openviking-server --help
   },
   "embedding": {
     "dense": {
-      "provider": "dashscope",
+      "provider": "openai",
       "model": "text-embedding-v3",
       "api_key": "sk-your-dashscope-api-key",
       "api_base": "https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -117,7 +117,10 @@ openviking-server --help
 }
 ```
 
-> **说明**：`api_base` 使用的是 DashScope 的 OpenAI 兼容模式地址。`api_key` 可在 [阿里云 DashScope 控制台](https://dashscope.console.aliyun.com/) 获取。
+> **说明**：
+> - `vlm.provider` 使用 `"dashscope"`，因为 VLM 层走 litellm，原生支持 dashscope。
+> - `embedding.dense.provider` 必须使用 `"openai"`，因为 DashScope 的 `/compatible-mode/v1` 是 OpenAI 兼容协议，embedding 层通过 `api_base` 指向 DashScope 即可。
+> - `api_key` 可在 [阿里云 DashScope 控制台](https://dashscope.console.aliyun.com/) 获取。
 
 #### 火山引擎（VolcEngine）配置示例
 
