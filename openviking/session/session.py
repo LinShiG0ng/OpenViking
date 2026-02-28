@@ -7,7 +7,7 @@ Session as Context: Sessions integrated into L0/L1/L2 system.
 
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import uuid4
@@ -182,7 +182,7 @@ class Session:
             message_id=msg.id,
             role=role,
             content=msg.content,
-            parts=[p.to_dict() for p in parts] if parts else [],
+            parts=[asdict(p) for p in parts] if parts else [],
         ))
         run_async(on_session_updated(
             session_id=self.session_id,
